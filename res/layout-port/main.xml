@@ -94,16 +94,14 @@
                 android:layout_height="wrap_content"
                 android:text="@string/text_sample_morse"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
-
-        <View
-            android:id="@+id/line2"
-            android:layout_width="wrap_content"
-            android:layout_height="1dp"
-            android:background="#504f" />
         </LinearLayout>
-       
-
     </ScrollView>
+
+    <View
+        android:id="@+id/line2"
+        android:layout_width="wrap_content"
+        android:layout_height="1dp"
+        android:background="#504f" />
 
     <LinearLayout
         android:id="@+id/linearLayout2"

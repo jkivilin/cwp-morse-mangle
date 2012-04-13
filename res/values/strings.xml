@@ -3,5 +3,10 @@
 
     <string name="hello">Hello World, CWPMorseMangleActivity!</string>
     <string name="app_name">CWPMorseMangle</string>
+    <string name="number1">1</string>
+    <string name="select_channel">Select channel:</string>
+    <string name="send_morse">Send morse</string>
+    <string name="received_messages">Received messages</string>
+    <string name="text_sample_morse">SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890</string>
 
 </resources>
