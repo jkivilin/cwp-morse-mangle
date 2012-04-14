@@ -12,7 +12,7 @@ import android.util.Log;
 
 public class MainSettingsActivity extends PreferenceActivity {
 	private static final String TAG = "MainSettingsActivity";
-	
+
 	/* default setup values */
 	public static final String HOSTNAME_DEFAULT = "cwp.opimobi.com";
 	public static final String HOSTPORT_DEFAULT = "20000";
@@ -26,7 +26,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate()");
-		
+
 		super.onCreate(savedInstanceState);
 
 		/* load settings.xml for preferences layout */
@@ -37,16 +37,20 @@ public class MainSettingsActivity extends PreferenceActivity {
 		morseSpeed = (ListPreference) findPreference("morse_speed");
 
 		/* load saved settings for display */
-		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
 
 		hostAddr.setSummary(settings.getString("hostname", HOSTNAME_DEFAULT));
 		hostPort.setSummary(settings.getString("hostport", HOSTPORT_DEFAULT));
-		
+
 		/* convert speed value to speed text */
-		String speedValue = settings.getString("morse_speed", MORSE_SPEED_DEFAULT);
-		String[] values = getResources().getStringArray(R.array.pref_morse_speed_entryvalues);
-		String[] entries = getResources().getStringArray(R.array.pref_morse_speed_entries);
-		
+		String speedValue = settings.getString("morse_speed",
+				MORSE_SPEED_DEFAULT);
+		String[] values = getResources().getStringArray(
+				R.array.pref_morse_speed_entryvalues);
+		String[] entries = getResources().getStringArray(
+				R.array.pref_morse_speed_entries);
+
 		int idx = Arrays.binarySearch(values, speedValue);
 		if (idx < 0) {
 			/*
@@ -55,13 +59,13 @@ public class MainSettingsActivity extends PreferenceActivity {
 			 */
 			speedValue = "med";
 			idx = Arrays.binarySearch(values, speedValue);
-			
+
 			morseSpeed.setValueIndex(idx);
 		}
-		
+
 		morseSpeed.setSummary(entries[idx]);
 	}
-	
+
 	@Override
 	public void onRestart() {
 		Log.d(TAG, "onRestart()");
@@ -75,32 +79,32 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 		super.onStart();
 	}
-	
+
 	@Override
 	public void onResume() {
 		Log.d(TAG, "onResume()");
 
 		super.onResume();
 	}
-	
+
 	@Override
 	public void onPause() {
 		Log.d(TAG, "onPause()");
-		
+
 		super.onPause();
 	}
-	
+
 	@Override
 	public void onStop() {
 		Log.d(TAG, "onStop()");
-		
+
 		super.onStop();
 	}
-	
+
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy()");
-		
+
 		super.onDestroy();
 	}
 }
