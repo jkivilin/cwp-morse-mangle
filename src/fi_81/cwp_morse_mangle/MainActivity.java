@@ -7,9 +7,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,9 +28,30 @@ public class MainActivity extends Activity {
 	private boolean serviceBound = false;
 	private CWPControlService cwpService;
 
-	/* Views that need control */
+	/* Visualization variables */
 	private ImageView lampImage;
-
+	private boolean touchingLamp = false;
+	
+	private Drawable lampImageRed;
+	private Drawable lampImageGray;
+	private Drawable lampImageGreen;
+	
+	/** Visualization of wave state changes */
+	private void visualizeStateChange(int state) {
+		/* Change appearance of the lamp */
+		switch (state) {
+		case CWPControlNotification.STATE_DOWN:
+			lampImage.setImageDrawable(lampImageGray);
+			break;
+		case CWPControlNotification.STATE_UP:
+			lampImage.setImageDrawable(lampImageGreen);
+			break;
+		case CWPControlNotification.STATE_DOUBLE_UP:
+			lampImage.setImageDrawable(lampImageRed);
+			break;
+		}
+	}
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -38,6 +61,11 @@ public class MainActivity extends Activity {
 
 		setContentView(R.layout.main);
 
+		/* Cache lamp drawables for better performance */
+		lampImageRed = getResources().getDrawable(R.drawable.red_circle);
+		lampImageGray = getResources().getDrawable(R.drawable.gray_circle);
+		lampImageGreen = getResources().getDrawable(R.drawable.green_circle);
+		
 		/* Handle touching of lamp */
 		lampImage = (ImageView) findViewById(R.id.lamp);
 		lampImage.setOnTouchListener(new OnTouchListener() {
@@ -47,12 +75,23 @@ public class MainActivity extends Activity {
 				switch (event.getActionMasked()) {
 				case MotionEvent.ACTION_DOWN:
 					/* touching */
-					lampImage.setImageResource(R.drawable.green_circle);
+					touchingLamp = true;
+
+					/* push state change to CWP service */
+					if (serviceBound)
+						cwpService.setSendingState(touchingLamp);
+
 					return true;
+
 				case MotionEvent.ACTION_UP:
 				case MotionEvent.ACTION_CANCEL:
 					/* end of touch */
-					lampImage.setImageResource(R.drawable.gray_circle);
+					touchingLamp = false;
+
+					/* push state change to CWP service */
+					if (serviceBound)
+						cwpService.setSendingState(touchingLamp);
+
 					return true;
 				}
 
@@ -159,6 +198,8 @@ public class MainActivity extends Activity {
 		@Override
 		public void stateChange(int state) {
 			Log.d(TAG, "stateChange(" + state + ")");
+			
+			visualizeStateChange(state);
 		}
 
 		@Override
@@ -181,6 +222,9 @@ public class MainActivity extends Activity {
 			serviceBound = true;
 
 			cwpService.registerNotifications(cwpNotifications, new Handler());
+			
+			/* update touching state */
+			cwpService.setSendingState(touchingLamp);
 		}
 
 		@Override

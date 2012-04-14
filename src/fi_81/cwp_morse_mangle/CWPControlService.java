@@ -156,4 +156,14 @@ public class CWPControlService extends Service {
 			});
 		}
 	}
+
+	/** Called by MainActivity when touching lamp-image */
+	public synchronized void setSendingState(boolean setUpState) {
+		if (sendStateUp != setUpState) {
+			sendStateUp = setUpState;
+			
+			/* Notify UI of state change */
+			notifyStateChange();
+		}
+	}
 }
