@@ -118,7 +118,6 @@
             android:minWidth="256dp"
             android:scaleType="fitXY"
             android:src="@drawable/gray_circle" />
-
     </LinearLayout>
 
     <LinearLayout

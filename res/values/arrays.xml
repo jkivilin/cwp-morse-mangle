@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string-array name="pref_morse_speed_entries">
-        <item >Fast</item>
-        <item >Medium</item>
-        <item >Slow</item>
+        <item>Fast</item>
+        <item>Medium</item>
+        <item>Slow</item>
     </string-array>
     <string-array name="pref_morse_speed_entryvalues">
-        <item >fast</item>
-        <item >med</item>
-        <item >slow</item>
+        <item>fast</item>
+        <item>med</item>
+        <item>slow</item>
     </string-array>
+
 </resources>

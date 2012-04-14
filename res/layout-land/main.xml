@@ -113,7 +113,6 @@
             android:minWidth="150dp"
             android:scaleType="fitXY"
             android:src="@drawable/gray_circle" />
-
     </LinearLayout>
 
     <View
