@@ -59,6 +59,9 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
+
+		/* Start CWP service */
+		startService(new Intent(this, CWPControlService.class));
 	}
 
 	@Override
