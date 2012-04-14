@@ -26,6 +26,9 @@
             android:name="MainSettingsActivity"
             android:label="@string/app_main_settings" >
         </activity>
+
+        <service android:name="CWPControlService" >
+        </service>
     </application>
 
 </manifest>
