@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory android:key="cwp_server_setup" android:title="@string/pref_cwp_server_setup">
+        <EditTextPreference android:key="hostname" android:title="@string/pref_server_address"/>
+        <EditTextPreference android:key="hostport" android:title="@string/pref_server_port"/>
+        
+    </PreferenceCategory><PreferenceCategory android:key="morse_setup" android:title="@string/pref_morse_setup">
+        <ListPreference android:title="@string/pref_morse_speed" android:key="morse_speed" android:entries="@array/pref_morse_speed_entries" android:entryValues="@array/pref_morse_speed_entryvalues"/>
+    </PreferenceCategory>
+    
+
+</PreferenceScreen>
