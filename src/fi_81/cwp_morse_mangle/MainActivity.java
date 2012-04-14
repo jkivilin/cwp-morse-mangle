@@ -168,6 +168,10 @@ public class MainActivity extends Activity {
 	public void onResume() {
 		Log.d(TAG, "onResume()");
 
+		/* Re-enable notifications when coming back to foreground */
+		if (serviceBound)
+			cwpService.registerNotifications(cwpNotifications, new Handler());
+		
 		super.onResume();
 	}
 
@@ -176,6 +180,10 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onPause()");
 
 		super.onPause();
+
+		/* Disable notifications when on background */
+		if (serviceBound)
+			cwpService.registerNotifications(null, null);
 
 		/* Stopping sound and vibrator is absolute must when pausing activity */
 		if (tone != null)
@@ -273,6 +281,7 @@ public class MainActivity extends Activity {
 			cwpService = binder.getService();
 			serviceBound = true;
 
+			/* Enable notifications */
 			cwpService.registerNotifications(cwpNotifications, new Handler());
 
 			/* update touching state */
