@@ -105,11 +105,14 @@ public class MainActivity extends Activity {
 		lampImage = (ImageView) findViewById(R.id.lamp);
 		lampImage.setOnTouchListener(new OnTouchListener() {
 			public boolean onTouch(View v, MotionEvent event) {
-				Log.d(TAG, "onTouch(" + event.getActionMasked() + ")");
+				boolean up = false;
 
 				switch (event.getActionMasked()) {
 				case MotionEvent.ACTION_DOWN:
 					/* touching */
+
+					Log.d(TAG, "onTouch(ACTION_DOWN)");
+
 					touchingLamp = true;
 
 					/* push state change to CWP service */
@@ -119,8 +122,13 @@ public class MainActivity extends Activity {
 					return true;
 
 				case MotionEvent.ACTION_UP:
+					up = true;
 				case MotionEvent.ACTION_CANCEL:
 					/* end of touch */
+
+					Log.d(TAG, up ? "onTouch(ACTION_UP)"
+							: "onTouch(ACTION_CANCEL)");
+
 					touchingLamp = false;
 
 					/* push state change to CWP service */
