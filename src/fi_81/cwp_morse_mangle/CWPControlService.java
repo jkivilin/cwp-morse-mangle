@@ -11,6 +11,10 @@ public class CWPControlService extends Service {
 	private static final String TAG = "CWPControlService";
 	private final IBinder binder = new CWPControlBinder();
 
+	/* Threading */
+	private Thread ioThread;
+	private boolean ioThreadStop = false;
+
 	/* Callbacks to MainActivity */
 	private CWPControlNotification notify = null;
 	private Handler notifyHandler = null;
@@ -72,6 +76,36 @@ public class CWPControlService extends Service {
 	public void onCreate() {
 		Log.d(TAG, "onCreate()");
 
+		/* Simulate receiving of messages from IO thread */
+		ioThread = new Thread(new Runnable() {
+			public void run() {
+				while (!ioThreadStop) {
+					boolean up;
+
+					synchronized (CWPControlService.this) {
+						up = recvStateUp;
+					}
+
+					try {
+						if (up)
+							Thread.sleep(100);
+						else
+							Thread.sleep(2000);
+					} catch (InterruptedException e) {
+						return;
+					}
+
+					synchronized (CWPControlService.this) {
+						recvStateUp = !recvStateUp;
+					}
+
+					notifyStateChange();
+				}
+			}
+		});
+
+		ioThread.start();
+
 		super.onCreate();
 	}
 
@@ -102,6 +136,16 @@ public class CWPControlService extends Service {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy()");
+
+		ioThreadStop = true;
+		ioThread.interrupt();
+		try {
+			ioThread.join();
+		} catch (InterruptedException e) {
+			/* do nothing */
+			Log.e(TAG,
+					"onDestroy(): joining ioThread failed with " + e.toString());
+		}
 
 		super.onDestroy();
 	}
