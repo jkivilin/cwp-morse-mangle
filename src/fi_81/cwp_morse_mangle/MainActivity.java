@@ -14,6 +14,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.widget.ImageView;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
@@ -21,6 +25,9 @@ public class MainActivity extends Activity {
 	/* Service state */
 	private boolean serviceBound = false;
 	private CWPControlService cwpService;
+
+	/* Views that need control */
+	private ImageView lampImage;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -31,8 +38,27 @@ public class MainActivity extends Activity {
 
 		setContentView(R.layout.main);
 
-		/* Start CWP service */
-		startService(new Intent(this, CWPControlService.class));
+		/* Handle touching of lamp */
+		lampImage = (ImageView) findViewById(R.id.lamp);
+		lampImage.setOnTouchListener(new OnTouchListener() {
+			public boolean onTouch(View v, MotionEvent event) {
+				Log.d(TAG, "onTouch(" + event.getActionMasked() + ")");
+
+				switch (event.getActionMasked()) {
+				case MotionEvent.ACTION_DOWN:
+					/* touching */
+					lampImage.setImageResource(R.drawable.green_circle);
+					return true;
+				case MotionEvent.ACTION_UP:
+				case MotionEvent.ACTION_CANCEL:
+					/* end of touch */
+					lampImage.setImageResource(R.drawable.gray_circle);
+					return true;
+				}
+
+				return false;
+			}
+		});
 	}
 
 	@Override
