@@ -161,7 +161,7 @@ public class CWPControlService extends Service {
 	public synchronized void setSendingState(boolean setUpState) {
 		if (sendStateUp != setUpState) {
 			sendStateUp = setUpState;
-			
+
 			/* Notify UI of state change */
 			notifyStateChange();
 		}

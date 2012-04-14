@@ -33,51 +33,53 @@ public class MainActivity extends Activity {
 	/* Visualization variables */
 	private ImageView lampImage;
 	private boolean touchingLamp = false;
-	
+
 	private Drawable lampImageRed;
 	private Drawable lampImageGray;
 	private Drawable lampImageGreen;
-	
+
 	private Vibrator vibrator;
 	private ToneGenerator tone;
-	
+
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
 		/* Change appearance of the lamp */
 		switch (state) {
 		case CWPControlNotification.STATE_DOWN:
 			lampImage.setImageDrawable(lampImageGray);
-			
+
 			if (vibrator != null)
 				vibrator.cancel();
-			
+
 			if (tone != null)
 				tone.stopTone();
-			
+
 			break;
+
 		case CWPControlNotification.STATE_UP:
 			lampImage.setImageDrawable(lampImageGreen);
-			
+
 			if (vibrator != null)
 				vibrator.vibrate(50);
-			
+
 			if (tone != null)
 				tone.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE);
-			
+
 			break;
+
 		case CWPControlNotification.STATE_DOUBLE_UP:
 			lampImage.setImageDrawable(lampImageRed);
-			
+
 			if (vibrator != null)
 				vibrator.vibrate(50);
 
 			if (tone != null)
 				tone.startTone(ToneGenerator.TONE_DTMF_1);
-			
+
 			break;
 		}
 	}
-	
+
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -89,15 +91,16 @@ public class MainActivity extends Activity {
 
 		/* Vibrator for ultimate morse experience */
 		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-		
+
 		/* ToneGenerator for audiable signals */
-		tone = new ToneGenerator(AudioManager.STREAM_DTMF, ToneGenerator.MAX_VOLUME);
-		
+		tone = new ToneGenerator(AudioManager.STREAM_DTMF,
+				ToneGenerator.MAX_VOLUME);
+
 		/* Cache lamp drawables for better performance */
 		lampImageRed = getResources().getDrawable(R.drawable.red_circle);
 		lampImageGray = getResources().getDrawable(R.drawable.gray_circle);
 		lampImageGreen = getResources().getDrawable(R.drawable.green_circle);
-		
+
 		/* Handle touching of lamp */
 		lampImage = (ImageView) findViewById(R.id.lamp);
 		lampImage.setOnTouchListener(new OnTouchListener() {
@@ -175,7 +178,7 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onStop()");
 
 		super.onStop();
-		
+
 		/* Unbind from the service */
 		if (serviceBound) {
 			unbindService(cwpServiceConnection);
@@ -236,7 +239,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void stateChange(int state) {
 			Log.d(TAG, "stateChange(" + state + ")");
-			
+
 			visualizeStateChange(state);
 		}
 
@@ -260,7 +263,7 @@ public class MainActivity extends Activity {
 			serviceBound = true;
 
 			cwpService.registerNotifications(cwpNotifications, new Handler());
-			
+
 			/* update touching state */
 			cwpService.setSendingState(touchingLamp);
 		}
