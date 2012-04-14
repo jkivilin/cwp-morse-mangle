@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.drawable.Drawable;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -36,18 +38,42 @@ public class MainActivity extends Activity {
 	private Drawable lampImageGray;
 	private Drawable lampImageGreen;
 	
+	private Vibrator vibrator;
+	private ToneGenerator tone;
+	
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
 		/* Change appearance of the lamp */
 		switch (state) {
 		case CWPControlNotification.STATE_DOWN:
 			lampImage.setImageDrawable(lampImageGray);
+			
+			if (vibrator != null)
+				vibrator.cancel();
+			
+			if (tone != null)
+				tone.stopTone();
+			
 			break;
 		case CWPControlNotification.STATE_UP:
 			lampImage.setImageDrawable(lampImageGreen);
+			
+			if (vibrator != null)
+				vibrator.vibrate(50);
+			
+			if (tone != null)
+				tone.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE);
+			
 			break;
 		case CWPControlNotification.STATE_DOUBLE_UP:
 			lampImage.setImageDrawable(lampImageRed);
+			
+			if (vibrator != null)
+				vibrator.vibrate(50);
+
+			if (tone != null)
+				tone.startTone(ToneGenerator.TONE_DTMF_1);
+			
 			break;
 		}
 	}
@@ -61,6 +87,12 @@ public class MainActivity extends Activity {
 
 		setContentView(R.layout.main);
 
+		/* Vibrator for ultimate morse experience */
+		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+		
+		/* ToneGenerator for audiable signals */
+		tone = new ToneGenerator(AudioManager.STREAM_DTMF, ToneGenerator.MAX_VOLUME);
+		
 		/* Cache lamp drawables for better performance */
 		lampImageRed = getResources().getDrawable(R.drawable.red_circle);
 		lampImageGray = getResources().getDrawable(R.drawable.gray_circle);
@@ -130,6 +162,12 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onPause()");
 
 		super.onPause();
+
+		/* Stopping sound and vibrator is absolute must when pausing activity */
+		if (tone != null)
+			tone.stopTone();
+		if (vibrator != null)
+			vibrator.cancel();
 	}
 
 	@Override
@@ -137,7 +175,7 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onStop()");
 
 		super.onStop();
-
+		
 		/* Unbind from the service */
 		if (serviceBound) {
 			unbindService(cwpServiceConnection);
