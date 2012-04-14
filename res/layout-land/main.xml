@@ -112,7 +112,7 @@
             android:minHeight="150dp"
             android:minWidth="150dp"
             android:scaleType="fitXY"
-            android:src="@android:drawable/presence_invisible" />
+            android:src="@drawable/gray_circle" />
 
     </LinearLayout>
 
