@@ -426,6 +426,7 @@ public class MainActivity extends Activity {
 			Log.d(TAG, "onServiceDisconnected()");
 
 			serviceBound = false;
+			cwpService = null;
 		}
 	};
 }

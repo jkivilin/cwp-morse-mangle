@@ -91,12 +91,18 @@ public class CWPControlService extends Service {
 					boolean up, sendingComplete = false;
 
 					synchronized (CWPControlService.this) {
+						recvStateUp = !recvStateUp;
 						up = recvStateUp;
 
 						if (sendingMorseCount > 0)
 							if (--sendingMorseCount == 0)
 								sendingComplete = true;
 					}
+
+					notifyStateChange();
+
+					if (sendingComplete)
+						notifyMorseMessageComplete();
 
 					try {
 						if (up)
@@ -106,15 +112,6 @@ public class CWPControlService extends Service {
 					} catch (InterruptedException e) {
 						return;
 					}
-
-					synchronized (CWPControlService.this) {
-						recvStateUp = !recvStateUp;
-					}
-
-					notifyStateChange();
-
-					if (sendingComplete)
-						notifyMorseMessageComplete();
 				}
 			}
 		});
