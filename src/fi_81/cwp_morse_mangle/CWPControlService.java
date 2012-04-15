@@ -8,6 +8,35 @@ import android.os.IBinder;
 import android.util.Log;
 
 public class CWPControlService extends Service {
+	/** Callbacks for MainActivity */
+	public interface CWPControlNotification {
+		public static final int STATE_DOWN = 0;
+		public static final int STATE_UP = 1;
+		public static final int STATE_DOUBLE_UP = 2;
+
+		/**
+		 * Called when stateChanges, 0 = down, 1 = up, 2 = double-up (when
+		 * received up when sending up)
+		 */
+		abstract public void stateChange(int state);
+
+		/**
+		 * Called when CWPService manages to decode received signals as morse
+		 * code and morse message string has been updated as result.
+		 */
+		abstract public void morseUpdated(String latest);
+
+		/**
+		 * Called when CWPService completes sending morse message.
+		 */
+		abstract public void morseMessageComplete();
+
+		/**
+		 * Called when CWPService received frequency change message.
+		 */
+		public abstract void frequencyChange(long freq);
+	}
+
 	private static final String TAG = "CWPControlService";
 	private final IBinder binder = new CWPControlBinder();
 
@@ -22,6 +51,7 @@ public class CWPControlService extends Service {
 	/* Send and receive channel states */
 	private boolean recvStateUp = false;
 	private boolean sendStateUp = false;
+	private long frequency = 1;
 
 	/* Received morse string */
 	private String morseMessage = "";
@@ -47,30 +77,6 @@ public class CWPControlService extends Service {
 
 			return CWPControlService.this;
 		}
-	}
-
-	/* Callbacks for MainActivity */
-	public interface CWPControlNotification {
-		public static final int STATE_DOWN = 0;
-		public static final int STATE_UP = 1;
-		public static final int STATE_DOUBLE_UP = 2;
-
-		/**
-		 * Called when stateChanges, 0 = down, 1 = up, 2 = double-up (when
-		 * received up when sending up)
-		 */
-		abstract public void stateChange(int state);
-
-		/**
-		 * Called when CWPService manages to decode received signals as morse
-		 * code and morse message string has been updated as result.
-		 */
-		abstract public void morseUpdated(String latest);
-
-		/**
-		 * Called when CWPService completes sending morse message.
-		 */
-		abstract public void morseMessageComplete();
 	}
 
 	@Override
@@ -173,6 +179,7 @@ public class CWPControlService extends Service {
 		/* Submit initial state to caller */
 		notifyStateChange();
 		notifyMorseUpdates();
+		notifyFrequencyChange();
 	}
 
 	/** Called when need to send stateChange notifications to activity */
@@ -251,6 +258,31 @@ public class CWPControlService extends Service {
 		}
 	}
 
+	/** Called when received frequency change message */
+	private void notifyFrequencyChange() {
+		CWPControlNotification notify;
+		Handler handler;
+		long freq;
+
+		synchronized (this) {
+			notify = this.notify;
+			handler = notifyHandler;
+			freq = frequency;
+		}
+
+		if (notify != null) {
+			final CWPControlNotification notifyFinal = notify;
+			final long freqFinal = freq;
+
+			/* Might be called from IO-thread, need to dispatch to UI thread */
+			handler.post(new Runnable() {
+				public void run() {
+					notifyFinal.frequencyChange(freqFinal);
+				}
+			});
+		}
+	}
+
 	/** Called by MainActivity when touching lamp-image */
 	public void setSendingState(boolean setUpState) {
 		boolean changed = false;
@@ -275,5 +307,15 @@ public class CWPControlService extends Service {
 	/** Pushes morse message to CWP server */
 	public synchronized void sendMorseMessage(String morse) {
 		sendingMorseCount = morse.length();
+	}
+
+	/** Pushed frequency change to CWP server */
+	public synchronized void setFrequency(long freq) {
+		if (freq == frequency)
+			return;
+
+		frequency = freq;
+
+		notifyFrequencyChange();
 	}
 }

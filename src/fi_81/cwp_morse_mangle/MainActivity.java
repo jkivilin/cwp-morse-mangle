@@ -280,7 +280,7 @@ public class MainActivity extends Activity {
 
 			public boolean onEditorAction(TextView v, int actionId,
 					KeyEvent event) {
-				BigInteger bigInput = BigInteger.ONE;
+				BigInteger bigInput;
 
 				/*
 				 * Handle channel input as BigInteger, as -2^32 cannot be
@@ -294,21 +294,24 @@ public class MainActivity extends Activity {
 					 * be positive integer, nether the less, reset to default
 					 * channel in case of hickups.
 					 */
-					channelEdit.setText(Long.toString(1));
+					bigInput = BigInteger.ONE;
+					channelEdit.setText(bigInput.toString());
 				}
 
 				/* Limit values to range 1..2^32 */
-				if (bigInput.compareTo(BigInteger.ONE) < 0)
-					channelEdit.setText(Long.toString(1));
-				else if (bigInput.negate().compareTo(int32MinValue) < 0)
-					channelEdit.setText(Long
-							.toString(-(long) Integer.MIN_VALUE));
+				if (bigInput.compareTo(BigInteger.ONE) < 0) {
+					bigInput = BigInteger.ONE;
 
-				/* Inform user of the change */
-				Toast.makeText(
-						MainActivity.this,
-						getResources().getText(R.string.toast_set_channel_to)
-								+ ": " + channelEdit.getText(), 0).show();
+					channelEdit.setText(bigInput.toString());
+				} else if (bigInput.negate().compareTo(int32MinValue) < 0) {
+					bigInput = int32MinValue.negate();
+
+					channelEdit.setText(bigInput.toString());
+				}
+
+				/* Send change to CWP service */
+				if (serviceBound)
+					cwpService.setFrequency(bigInput.longValue());
 
 				return false;
 			}
@@ -463,6 +466,20 @@ public class MainActivity extends Activity {
 			Log.d(TAG, "morseMessageComplete()");
 
 			sendingMorseMessageComplete();
+		}
+
+		@Override
+		public void frequencyChange(long freq) {
+			Log.d(TAG, "morseMessageComplete()");
+
+			/* Tell user about new frequency */
+			Toast.makeText(
+					MainActivity.this,
+					getResources().getText(R.string.toast_set_channel_to)
+							+ ": " + Long.toString(freq), 2000).show();
+
+			/* Set frequency in channel editor */
+			channelEdit.setText(Long.toString(freq));
 		}
 	};
 
