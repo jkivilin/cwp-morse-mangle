@@ -68,36 +68,59 @@ public class MainActivity extends Activity {
 
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
+		Log.d(TAG, String.format("visualizeStateChange(%d)", state));
+
 		/* Change appearance of the lamp */
 		switch (state) {
 		case CWPControlNotification.STATE_DOWN:
+			/* Cache lamp drawable for better performance */
+			if (lampImageGray == null)
+				lampImageGray = getResources().getDrawable(
+						R.drawable.gray_circle);
+
+			/* Draw gray lamp */
 			lampImage.setImageDrawable(lampImageGray);
 
+			/* End tone and vibration when wntering down-state */
 			if (vibrator != null)
 				vibrator.cancel();
-
 			if (tone != null)
 				tone.stopTone();
 
 			break;
 
 		case CWPControlNotification.STATE_UP:
+			/* Cache lamp drawable for better performance */
+			if (lampImageGreen == null)
+				lampImageGreen = getResources().getDrawable(
+						R.drawable.green_circle);
+
+			/* Draw green lamp */
 			lampImage.setImageDrawable(lampImageGreen);
 
+			/* Start 'gentle'-tone and vibrate shortly when entering up-state */
 			if (vibrator != null)
 				vibrator.vibrate(50);
-
 			if (tone != null)
 				tone.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE);
 
 			break;
 
 		case CWPControlNotification.STATE_DOUBLE_UP:
+			/* Cache lamp drawable for better performance */
+			if (lampImageRed == null)
+				lampImageRed = getResources()
+						.getDrawable(R.drawable.red_circle);
+
+			/* Draw red lamp on double-up/collision */
 			lampImage.setImageDrawable(lampImageRed);
 
+			/*
+			 * Start 'annoying'-tone and vibrate shortly when entering
+			 * double-up-state
+			 */
 			if (vibrator != null)
 				vibrator.vibrate(50);
-
 			if (tone != null)
 				tone.startTone(ToneGenerator.TONE_DTMF_1);
 
@@ -107,6 +130,9 @@ public class MainActivity extends Activity {
 
 	/** To report touching state to service */
 	private void setTouchingState(boolean touching) {
+		Log.d(TAG, String.format("setTouchingState(new: %b, old: %b)",
+				touching, touchingLamp));
+
 		if (touchingLamp == touching)
 			return;
 
@@ -119,6 +145,8 @@ public class MainActivity extends Activity {
 
 	/** Called when sending morse message completes */
 	private void sendingMorseMessageComplete() {
+		Log.d(TAG, "sendingMorseMessageComplete()");
+
 		if (!sendingMorseMessage)
 			return;
 
@@ -143,6 +171,8 @@ public class MainActivity extends Activity {
 
 	/** Called when sending morse message to server */
 	private void sendMorseMessage() {
+		Log.d(TAG, "sendMorseMessage()");
+
 		sendingMorseMessage = true;
 
 		/* Disable touching */
@@ -169,6 +199,10 @@ public class MainActivity extends Activity {
 
 	/** Called when CWP service changes frequency */
 	private void receivedNewChannelSetting(long freq) {
+		Log.d(TAG, String.format(
+				"receivedNewChannelSetting(new-freq: %d, old-freq: %d)", freq,
+				currentChannel));
+
 		/* Tell user about new frequency */
 		if (currentChannel != freq) {
 			currentChannel = freq;
@@ -197,11 +231,6 @@ public class MainActivity extends Activity {
 		 * Handle touching of lamp
 		 */
 		lampImage = (ImageView) findViewById(R.id.lamp);
-
-		/* Cache lamp drawables for better performance */
-		lampImageRed = getResources().getDrawable(R.drawable.red_circle);
-		lampImageGray = getResources().getDrawable(R.drawable.gray_circle);
-		lampImageGreen = getResources().getDrawable(R.drawable.green_circle);
 
 		lampImage.setOnTouchListener(new OnTouchListener() {
 			public boolean onTouch(View v, MotionEvent event) {
@@ -402,11 +431,15 @@ public class MainActivity extends Activity {
 			tone.stopTone();
 			tone = null;
 		}
-
 		if (vibrator != null) {
 			vibrator.cancel();
 			vibrator = null;
 		}
+
+		/* Clear cached images */
+		lampImageRed = null;
+		lampImageGray = null;
+		lampImageGreen = null;
 	}
 
 	@Override
@@ -497,7 +530,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void stateChange(int state) {
-			Log.d(TAG, "stateChange(" + state + ")");
+			Log.d(TAG, String.format("stateChange(%d)", state));
 
 			if (!serviceBound) {
 				Log.w(TAG, "stateChange() callback while service not bound!");
@@ -509,7 +542,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void morseUpdated(String morse) {
-			Log.d(TAG, "morseUpdated(" + morse + ")");
+			Log.d(TAG, String.format("morseUpdated(%s)", morse));
 
 			if (!serviceBound) {
 				Log.w(TAG, "morseUpdated() callback while service not bound!");
@@ -532,7 +565,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void frequencyChange(long freq) {
-			Log.d(TAG, "frequencyChange()");
+			Log.d(TAG, String.format("frequencyChange(%d)", freq));
 
 			if (!serviceBound) {
 				Log.w(TAG,
