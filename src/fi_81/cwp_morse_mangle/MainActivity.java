@@ -353,9 +353,15 @@ public class MainActivity extends Activity {
 					ToneGenerator.MAX_VOLUME);
 		}
 
-		/* Re-enable notifications when coming back to foreground */
-		if (serviceBound)
+		if (serviceBound) {
+			/* Re-enable notifications when coming back to foreground */
 			cwpService.registerNotifications(cwpNotifications, new Handler());
+
+			/* Pass current settings to CWP service */
+			cwpService.setConfiguration(DefaultSettings.getHostName(settings),
+					DefaultSettings.getHostPortInt(settings),
+					DefaultSettings.getMorseSpeedMillisec(settings));
+		}
 
 		super.onResume();
 	}
@@ -511,8 +517,17 @@ public class MainActivity extends Activity {
 			cwpService = binder.getService();
 			serviceBound = true;
 
+			/* load saved settings */
+			SharedPreferences settings = PreferenceManager
+					.getDefaultSharedPreferences(MainActivity.this);
+
 			/* Enable notifications */
 			cwpService.registerNotifications(cwpNotifications, new Handler());
+
+			/* Pass current settings to CWP service */
+			cwpService.setConfiguration(DefaultSettings.getHostName(settings),
+					DefaultSettings.getHostPortInt(settings),
+					DefaultSettings.getMorseSpeedMillisec(settings));
 
 			/*
 			 * Enable GUI objects (morse and channel editors, keep send button

@@ -44,6 +44,11 @@ public class CWPControlService extends Service {
 	private Thread ioThread;
 	private boolean ioThreadStop = false;
 
+	/* Configuration */
+	private String hostName = "";
+	private int hostPort = 0;
+	private int morseSpeed = 0;
+
 	/* Callbacks to MainActivity */
 	private CWPControlNotification notify = null;
 	private Handler notifyHandler = null;
@@ -166,6 +171,21 @@ public class CWPControlService extends Service {
 		}
 
 		super.onDestroy();
+	}
+
+	/** New configuration for CWP service */
+	public synchronized void setConfiguration(String hostName, int hostPort,
+			int morseSpeed) {
+		if (hostName.compareTo(this.hostName) != 0 || hostPort != this.hostPort) {
+			/* Server has changed. Need to reset connection. */
+		}
+
+		if (morseSpeed != this.morseSpeed) {
+			/*
+			 * Morse speed changed. Handling is easy as speed is stored as
+			 * global/static variable.
+			 */
+		}
 	}
 
 	/** Registers notification callbacks */
