@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
 
 	/* Channel input */
 	private EditText channelEdit;
+	private long currentChannel = 1;
 
 	/* Visualization variables */
 	private ImageView lampImage;
@@ -166,6 +167,23 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	/** Called when CWP service changes frequency */
+	private void receivedNewChannelSetting(long freq) {
+		/* Tell user about new frequency */
+		if (currentChannel != freq) {
+			currentChannel = freq;
+
+			/* Set frequency in channel editor */
+			channelEdit.setText(Long.toString(freq));
+
+			/* Make small notification of channel change */
+			Toast.makeText(
+					MainActivity.this,
+					getResources().getText(R.string.toast_set_channel_to)
+							+ ": " + freq, 2000).show();
+		}
+	}
+
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -253,7 +271,8 @@ public class MainActivity extends Activity {
 			public CharSequence filter(CharSequence source, int start, int end,
 					Spanned dest, int dstart, int dend) {
 				for (int i = start; i < end; i++)
-					if (!CWPControlService.isAllowedMorseCharacter(source.charAt(i)))
+					if (!CWPControlService.isAllowedMorseCharacter(source
+							.charAt(i)))
 						return "";
 
 				return null;
@@ -371,6 +390,9 @@ public class MainActivity extends Activity {
 
 		super.onPause();
 
+		/* Disable touching state */
+		setTouchingState(false);
+
 		/* Disable notifications when on background */
 		if (serviceBound)
 			cwpService.registerNotifications(null, null);
@@ -430,12 +452,16 @@ public class MainActivity extends Activity {
 	protected void onSaveInstanceState(Bundle outState) {
 		Log.d(TAG, "onSaveInstanceState()");
 
+		outState.putLong("current_channel", currentChannel);
+
 		super.onSaveInstanceState(outState);
 	}
 
 	@Override
 	protected void onRestoreInstanceState(Bundle savedInstanceState) {
 		Log.d(TAG, "onRestoreInstanceState()");
+
+		currentChannel = savedInstanceState.getLong("current_channel");
 
 		super.onRestoreInstanceState(savedInstanceState);
 
@@ -473,33 +499,48 @@ public class MainActivity extends Activity {
 		public void stateChange(int state) {
 			Log.d(TAG, "stateChange(" + state + ")");
 
+			if (!serviceBound) {
+				Log.w(TAG, "stateChange() callback while service not bound!");
+				return;
+			}
+
 			visualizeStateChange(state);
 		}
 
 		@Override
 		public void morseUpdated(String morse) {
-			Log.d(TAG, "receivedMorseMessage(" + morse + ")");
+			Log.d(TAG, "morseUpdated(" + morse + ")");
+
+			if (!serviceBound) {
+				Log.w(TAG, "morseUpdated() callback while service not bound!");
+				return;
+			}
 		}
 
 		@Override
 		public void morseMessageComplete() {
 			Log.d(TAG, "morseMessageComplete()");
 
+			if (!serviceBound) {
+				Log.w(TAG,
+						"morseMessageComplete() callback while service not bound!");
+				return;
+			}
+
 			sendingMorseMessageComplete();
 		}
 
 		@Override
 		public void frequencyChange(long freq) {
-			Log.d(TAG, "morseMessageComplete()");
+			Log.d(TAG, "frequencyChange()");
 
-			/* Tell user about new frequency */
-			Toast.makeText(
-					MainActivity.this,
-					getResources().getText(R.string.toast_set_channel_to)
-							+ ": " + Long.toString(freq), 2000).show();
+			if (!serviceBound) {
+				Log.w(TAG,
+						"frequencyChange() callback while service not bound!");
+				return;
+			}
 
-			/* Set frequency in channel editor */
-			channelEdit.setText(Long.toString(freq));
+			receivedNewChannelSetting(freq);
 		}
 	};
 

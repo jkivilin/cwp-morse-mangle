@@ -204,10 +204,14 @@ public class CWPControlService extends Service {
 		notifyFrequencyChange();
 	}
 
+	/** Returns notifier */
+	private synchronized CWPControlNotification getClientNotifier() {
+		return notify;
+	}
+
 	/** Called when need to send stateChange notifications to activity */
 	private void notifyStateChange() {
 		int state = CWPControlNotification.STATE_DOWN;
-		CWPControlNotification notify;
 		Handler handler;
 
 		synchronized (this) {
@@ -216,18 +220,19 @@ public class CWPControlService extends Service {
 			else if (recvStateUp || sendStateUp)
 				state = CWPControlNotification.STATE_UP;
 
-			notify = this.notify;
 			handler = notifyHandler;
 		}
 
-		if (notify != null) {
+		if (handler != null) {
 			final int finalState = state;
-			final CWPControlNotification notifyFinal = notify;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
-					notifyFinal.stateChange(finalState);
+					CWPControlNotification notify = getClientNotifier();
+
+					if (notify != null)
+						notify.stateChange(finalState);
 				}
 			});
 		}
@@ -235,24 +240,24 @@ public class CWPControlService extends Service {
 
 	/** Called when need to notification of updated morse message to activity */
 	private void notifyMorseUpdates() {
-		CWPControlNotification notify;
 		Handler handler;
 		String morse;
 
 		synchronized (this) {
-			notify = this.notify;
 			handler = notifyHandler;
 			morse = getMorseMessage();
 		}
 
-		if (notify != null) {
+		if (handler != null) {
 			final String morseFinal = morse;
-			final CWPControlNotification notifyFinal = notify;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
-					notifyFinal.morseUpdated(morseFinal);
+					CWPControlNotification notify = getClientNotifier();
+
+					if (notify != null)
+						notify.morseUpdated(morseFinal);
 				}
 			});
 		}
@@ -260,21 +265,20 @@ public class CWPControlService extends Service {
 
 	/** Called when sending morse message completes */
 	private void notifyMorseMessageComplete() {
-		CWPControlNotification notify;
 		Handler handler;
 
 		synchronized (this) {
-			notify = this.notify;
 			handler = notifyHandler;
 		}
 
-		if (notify != null) {
-			final CWPControlNotification notifyFinal = notify;
-
+		if (handler != null) {
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
-					notifyFinal.morseMessageComplete();
+					CWPControlNotification notify = getClientNotifier();
+
+					if (notify != null)
+						notify.morseMessageComplete();
 				}
 			});
 		}
@@ -282,24 +286,24 @@ public class CWPControlService extends Service {
 
 	/** Called when received frequency change message */
 	private void notifyFrequencyChange() {
-		CWPControlNotification notify;
 		Handler handler;
 		long freq;
 
 		synchronized (this) {
-			notify = this.notify;
 			handler = notifyHandler;
 			freq = frequency;
 		}
 
-		if (notify != null) {
-			final CWPControlNotification notifyFinal = notify;
+		if (handler != null) {
 			final long freqFinal = freq;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
-					notifyFinal.frequencyChange(freqFinal);
+					CWPControlNotification notify = getClientNotifier();
+
+					if (notify != null)
+						notify.frequencyChange(freqFinal);
 				}
 			});
 		}
@@ -340,9 +344,9 @@ public class CWPControlService extends Service {
 	public static boolean isAllowedMorseCharacter(char ch) {
 		char array[] = "ab3c012d".toCharArray();
 		Arrays.sort(array);
-		
+
 		int idx = Arrays.binarySearch(array, ch);
-		
+
 		return idx >= 0;
 	}
 }
