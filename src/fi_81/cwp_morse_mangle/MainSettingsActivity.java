@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -20,6 +21,8 @@ public class MainSettingsActivity extends PreferenceActivity implements
 	private EditTextPreference hostAddr;
 	private EditTextPreference hostPort;
 	private ListPreference morseSpeed;
+	private CheckBoxPreference allowBeep;
+	private CheckBoxPreference allowVibrator;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -33,6 +36,8 @@ public class MainSettingsActivity extends PreferenceActivity implements
 		hostAddr = (EditTextPreference) findPreference("hostname");
 		hostPort = (EditTextPreference) findPreference("hostport");
 		morseSpeed = (ListPreference) findPreference("morse_speed");
+		allowBeep = (CheckBoxPreference) findPreference("allow_beep");
+		allowVibrator = (CheckBoxPreference) findPreference("allow_vibrator");
 
 		hostAddr.setOnPreferenceChangeListener(this);
 		hostPort.setOnPreferenceChangeListener(this);
@@ -45,6 +50,9 @@ public class MainSettingsActivity extends PreferenceActivity implements
 		/* Force default settings in */
 		hostAddr.setText(DefaultSettings.getHostName(settings));
 		hostPort.setText(DefaultSettings.getHostPort(settings));
+
+		allowBeep.setChecked(DefaultSettings.getBeep(settings));
+		allowVibrator.setChecked(DefaultSettings.getVibrator(settings));
 
 		hostPort.setSummary(DefaultSettings.getHostPort(settings));
 		hostAddr.setSummary(DefaultSettings.getHostName(settings));
@@ -171,6 +179,8 @@ public class MainSettingsActivity extends PreferenceActivity implements
 		hostAddr = null;
 		hostPort = null;
 		morseSpeed = null;
+		allowBeep = null;
+		allowVibrator = null;
 
 		super.onDestroy();
 	}

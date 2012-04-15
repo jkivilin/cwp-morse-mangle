@@ -19,5 +19,8 @@
     <string name="pref_morse_speed">Sending speed</string>
     <string name="app_main_settings">CWP Morse Mangle Settings</string>
     <string name="toast_set_channel_to">Set channel to</string>
+    <string name="pref_tone">Allow beep</string>
+    <string name="pref_vibrator">Allow vibration</string>
+    <string name="pref_lamp_setup">Signal notifications</string>
 
 </resources>

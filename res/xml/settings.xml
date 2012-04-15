@@ -20,5 +20,15 @@
             android:key="morse_speed"
             android:title="@string/pref_morse_speed" />
     </PreferenceCategory>
+    <PreferenceCategory
+        android:key="lamp_setup"
+        android:title="@string/pref_lamp_setup" >
+        <CheckBoxPreference
+            android:key="allow_beep"
+            android:title="@string/pref_tone" />
+        <CheckBoxPreference
+            android:key="allow_vibrator"
+            android:title="@string/pref_vibrator" />
+    </PreferenceCategory>
 
 </PreferenceScreen>

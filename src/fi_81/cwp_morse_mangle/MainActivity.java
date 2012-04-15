@@ -9,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -16,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.text.InputFilter;
 import android.text.Spanned;
 import android.util.Log;
@@ -336,12 +338,20 @@ public class MainActivity extends Activity {
 	public void onResume() {
 		Log.d(TAG, "onResume()");
 
-		/* Vibrator for ultimate morse experience */
-		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+		/* load saved settings */
+		SharedPreferences settings = PreferenceManager
+				.getDefaultSharedPreferences(this);
 
-		/* ToneGenerator for audiable signals */
-		tone = new ToneGenerator(AudioManager.STREAM_DTMF,
-				ToneGenerator.MAX_VOLUME);
+		if (DefaultSettings.getVibrator(settings)) {
+			/* Vibrator for ultimate morse experience */
+			vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+		}
+
+		if (DefaultSettings.getBeep(settings)) {
+			/* ToneGenerator for audiable signals */
+			tone = new ToneGenerator(AudioManager.STREAM_DTMF,
+					ToneGenerator.MAX_VOLUME);
+		}
 
 		/* Re-enable notifications when coming back to foreground */
 		if (serviceBound)
@@ -365,8 +375,8 @@ public class MainActivity extends Activity {
 			tone.stopTone();
 			tone = null;
 		}
-		
-		if (vibrator != null) { 
+
+		if (vibrator != null) {
 			vibrator.cancel();
 			vibrator = null;
 		}
