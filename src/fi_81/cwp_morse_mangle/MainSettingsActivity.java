@@ -13,11 +13,6 @@ import android.util.Log;
 public class MainSettingsActivity extends PreferenceActivity {
 	private static final String TAG = "MainSettingsActivity";
 
-	/* default setup values */
-	public static final String HOSTNAME_DEFAULT = "cwp.opimobi.com";
-	public static final String HOSTPORT_DEFAULT = "20000";
-	public static final String MORSE_SPEED_DEFAULT = "med";
-
 	/* cached references to preference objects */
 	private EditTextPreference hostAddr;
 	private EditTextPreference hostPort;
@@ -40,12 +35,11 @@ public class MainSettingsActivity extends PreferenceActivity {
 		SharedPreferences settings = PreferenceManager
 				.getDefaultSharedPreferences(this);
 
-		hostAddr.setSummary(settings.getString("hostname", HOSTNAME_DEFAULT));
-		hostPort.setSummary(settings.getString("hostport", HOSTPORT_DEFAULT));
+		hostAddr.setSummary(DefaultSettings.getHostName(settings));
+		hostPort.setSummary(DefaultSettings.getHostPort(settings));
 
 		/* convert speed value to speed text */
-		String speedValue = settings.getString("morse_speed",
-				MORSE_SPEED_DEFAULT);
+		String speedValue = DefaultSettings.getMorseSpeed(settings);
 		String[] values = getResources().getStringArray(
 				R.array.pref_morse_speed_entryvalues);
 		String[] entries = getResources().getStringArray(
