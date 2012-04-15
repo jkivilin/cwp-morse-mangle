@@ -1,5 +1,7 @@
 package fi_81.cwp_morse_mangle;
 
+import java.math.BigInteger;
+
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlBinder;
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlNotification;
 import android.app.Activity;
@@ -30,6 +32,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.TextView.OnEditorActionListener;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
@@ -38,11 +43,14 @@ public class MainActivity extends Activity {
 	private boolean serviceBound = false;
 	private CWPControlService cwpService;
 
-	/* Input */
+	/* Morse input */
 	private EditText morseEdit;
 	private Button morseButton;
 	private ProgressBar morseProgress;
 	private boolean sendingMorseMessage = false;
+
+	/* Channel input */
+	private EditText channelEdit;
 
 	/* Visualization variables */
 	private ImageView lampImage;
@@ -120,6 +128,9 @@ public class MainActivity extends Activity {
 		/* Keep button disable (editor is empty) */
 		morseButton.setEnabled(false);
 
+		/* Re-enable channel edit */
+		channelEdit.setEnabled(true);
+
 		/* Hide spinner */
 		morseProgress.setVisibility(View.GONE);
 
@@ -137,6 +148,9 @@ public class MainActivity extends Activity {
 		/* Disable morse button and editor */
 		morseButton.setEnabled(false);
 		morseEdit.setEnabled(false);
+
+		/* Disable changing channel while sending message */
+		channelEdit.setEnabled(false);
 
 		/* Make spinner visible */
 		morseProgress.setVisibility(View.VISIBLE);
@@ -159,6 +173,11 @@ public class MainActivity extends Activity {
 
 		setContentView(R.layout.main);
 
+		/*
+		 * Handle touching of lamp
+		 */
+		lampImage = (ImageView) findViewById(R.id.lamp);
+
 		/* Vibrator for ultimate morse experience */
 		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
@@ -171,8 +190,6 @@ public class MainActivity extends Activity {
 		lampImageGray = getResources().getDrawable(R.drawable.gray_circle);
 		lampImageGreen = getResources().getDrawable(R.drawable.green_circle);
 
-		/* Handle touching of lamp */
-		lampImage = (ImageView) findViewById(R.id.lamp);
 		lampImage.setOnTouchListener(new OnTouchListener() {
 			public boolean onTouch(View v, MotionEvent event) {
 				boolean up = false;
@@ -204,7 +221,9 @@ public class MainActivity extends Activity {
 			}
 		});
 
-		/* Handle of editing morse message */
+		/*
+		 * Handle of editing morse message
+		 */
 		morseEdit = (EditText) findViewById(R.id.edit_morse);
 		morseButton = (Button) findViewById(R.id.button_send_morse);
 		morseProgress = (ProgressBar) findViewById(R.id.progress_morse);
@@ -247,6 +266,53 @@ public class MainActivity extends Activity {
 			}
 		};
 		morseEdit.setFilters(new InputFilter[] { filter });
+
+		/*
+		 * Handle frequency/channel change
+		 */
+		channelEdit = (EditText) findViewById(R.id.edit_channel);
+		channelEdit.setEnabled(false);
+
+		/* Make sure that channel is in acceptable range */
+		channelEdit.setOnEditorActionListener(new OnEditorActionListener() {
+			private final BigInteger int32MinValue = new BigInteger(Integer
+					.toString(Integer.MIN_VALUE));
+
+			public boolean onEditorAction(TextView v, int actionId,
+					KeyEvent event) {
+				BigInteger bigInput = BigInteger.ONE;
+
+				/*
+				 * Handle channel input as BigInteger, as -2^32 cannot be
+				 * converted to positive signed 32bit integer
+				 */
+				try {
+					bigInput = new BigInteger(channelEdit.getText().toString());
+				} catch (NumberFormatException NFE) {
+					/*
+					 * Should not happen as out input-field in xml is defined to
+					 * be positive integer, nether the less, reset to default
+					 * channel in case of hickups.
+					 */
+					channelEdit.setText(Long.toString(1));
+				}
+
+				/* Limit values to range 1..2^32 */
+				if (bigInput.compareTo(BigInteger.ONE) < 0)
+					channelEdit.setText(Long.toString(1));
+				else if (bigInput.negate().compareTo(int32MinValue) < 0)
+					channelEdit.setText(Long
+							.toString(-(long) Integer.MIN_VALUE));
+
+				/* Inform user of the change */
+				Toast.makeText(
+						MainActivity.this,
+						getResources().getText(R.string.toast_set_channel_to)
+								+ ": " + channelEdit.getText(), 0).show();
+
+				return false;
+			}
+		});
 
 		/* Start CWP service */
 		startService(new Intent(this, CWPControlService.class));
@@ -332,6 +398,7 @@ public class MainActivity extends Activity {
 		morseEdit = null;
 		morseButton = null;
 		morseProgress = null;
+		channelEdit = null;
 
 		super.onDestroy();
 	}
@@ -415,8 +482,12 @@ public class MainActivity extends Activity {
 			/* Enable notifications */
 			cwpService.registerNotifications(cwpNotifications, new Handler());
 
-			/* Enable GUI objects */
+			/*
+			 * Enable GUI objects (morse and channel editors, keep send button
+			 * disabled)
+			 */
 			morseEdit.setEnabled(true);
+			channelEdit.setEnabled(true);
 
 			/* Update touching state */
 			cwpService.setSendingState(touchingLamp);
