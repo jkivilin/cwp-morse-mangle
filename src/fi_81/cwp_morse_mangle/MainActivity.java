@@ -178,13 +178,6 @@ public class MainActivity extends Activity {
 		 */
 		lampImage = (ImageView) findViewById(R.id.lamp);
 
-		/* Vibrator for ultimate morse experience */
-		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-
-		/* ToneGenerator for audiable signals */
-		tone = new ToneGenerator(AudioManager.STREAM_DTMF,
-				ToneGenerator.MAX_VOLUME);
-
 		/* Cache lamp drawables for better performance */
 		lampImageRed = getResources().getDrawable(R.drawable.red_circle);
 		lampImageGray = getResources().getDrawable(R.drawable.gray_circle);
@@ -343,6 +336,13 @@ public class MainActivity extends Activity {
 	public void onResume() {
 		Log.d(TAG, "onResume()");
 
+		/* Vibrator for ultimate morse experience */
+		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+		/* ToneGenerator for audiable signals */
+		tone = new ToneGenerator(AudioManager.STREAM_DTMF,
+				ToneGenerator.MAX_VOLUME);
+
 		/* Re-enable notifications when coming back to foreground */
 		if (serviceBound)
 			cwpService.registerNotifications(cwpNotifications, new Handler());
@@ -361,10 +361,15 @@ public class MainActivity extends Activity {
 			cwpService.registerNotifications(null, null);
 
 		/* Stopping sound and vibrator is absolute must when pausing activity */
-		if (tone != null)
+		if (tone != null) {
 			tone.stopTone();
-		if (vibrator != null)
+			tone = null;
+		}
+		
+		if (vibrator != null) { 
 			vibrator.cancel();
+			vibrator = null;
+		}
 	}
 
 	@Override
