@@ -1,5 +1,7 @@
 package fi_81.cwp_morse_mangle;
 
+import java.util.Arrays;
+
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
@@ -319,11 +321,6 @@ public class CWPControlService extends Service {
 			notifyStateChange();
 	}
 
-	/** Returns list of allowed morse characters */
-	public static String getAllowedMorseCharacters() {
-		return "abcd0123";
-	}
-
 	/** Pushes morse message to CWP server */
 	public synchronized void sendMorseMessage(String morse) {
 		sendingMorseCount = morse.length();
@@ -337,5 +334,15 @@ public class CWPControlService extends Service {
 		frequency = freq;
 
 		notifyFrequencyChange();
+	}
+
+	/** Checks if character is allowed for morse message */
+	public static boolean isAllowedMorseCharacter(char ch) {
+		char array[] = "ab3c012d".toCharArray();
+		Arrays.sort(array);
+		
+		int idx = Arrays.binarySearch(array, ch);
+		
+		return idx >= 0;
 	}
 }
