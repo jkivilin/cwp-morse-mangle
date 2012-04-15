@@ -331,6 +331,7 @@ public class MainActivity extends Activity {
 		lampImage = null;
 		morseEdit = null;
 		morseButton = null;
+		morseProgress = null;
 
 		super.onDestroy();
 	}
