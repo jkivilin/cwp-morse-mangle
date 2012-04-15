@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
 
 	/* Input */
 	private EditText morseEdit;
-	
+
 	/* Visualization variables */
 	private ImageView lampImage;
 	private boolean touchingLamp = false;
@@ -147,19 +147,21 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
-		
+
 		/* Handle allowed input characters filter for editing morse message */
 		morseEdit = (EditText) findViewById(R.id.edit_morse);
 		InputFilter filter = new InputFilter() {
-			public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+			public CharSequence filter(CharSequence source, int start, int end,
+					Spanned dest, int dstart, int dend) {
 				for (; start < end; start++)
-					if (CWPControlService.getAllowedMorseCharacters().indexOf(source.charAt(start)) < 0)
+					if (CWPControlService.getAllowedMorseCharacters().indexOf(
+							source.charAt(start)) < 0)
 						return "";
-				
+
 				return null;
 			}
 		};
-		morseEdit.setFilters(new InputFilter[]{filter});
+		morseEdit.setFilters(new InputFilter[] { filter });
 
 		/* Start CWP service */
 		startService(new Intent(this, CWPControlService.class));
@@ -190,7 +192,7 @@ public class MainActivity extends Activity {
 		/* Re-enable notifications when coming back to foreground */
 		if (serviceBound)
 			cwpService.registerNotifications(cwpNotifications, new Handler());
-		
+
 		super.onResume();
 	}
 
@@ -221,12 +223,28 @@ public class MainActivity extends Activity {
 		if (serviceBound) {
 			unbindService(cwpServiceConnection);
 			serviceBound = false;
+			cwpService = null;
 		}
 	}
 
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy()");
+
+		/* Make sure there is no sound or vibration at exit */
+		if (tone != null)
+			tone.stopTone();
+		if (vibrator != null)
+			vibrator.cancel();
+		
+		/* Maybe not needed, but clear fields set at onCreate() anyway */
+		vibrator = null;
+		tone = null;
+		lampImageRed = null;
+		lampImageGray = null;
+		lampImageGreen = null;
+		lampImage = null;
+		morseEdit = null;
 
 		super.onDestroy();
 	}

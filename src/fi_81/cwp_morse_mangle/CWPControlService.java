@@ -203,7 +203,7 @@ public class CWPControlService extends Service {
 			notifyStateChange();
 		}
 	}
-	
+
 	/** Returns list of allowed morse characters */
 	public static String getAllowedMorseCharacters() {
 		return "abcd0123";
