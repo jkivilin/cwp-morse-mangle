@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -21,6 +23,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.widget.EditText;
 import android.widget.ImageView;
 
 public class MainActivity extends Activity {
@@ -30,6 +33,9 @@ public class MainActivity extends Activity {
 	private boolean serviceBound = false;
 	private CWPControlService cwpService;
 
+	/* Input */
+	private EditText morseEdit;
+	
 	/* Visualization variables */
 	private ImageView lampImage;
 	private boolean touchingLamp = false;
@@ -141,6 +147,19 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
+		
+		/* Handle allowed input characters filter for editing morse message */
+		morseEdit = (EditText) findViewById(R.id.edit_morse);
+		InputFilter filter = new InputFilter() {
+			public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+				for (; start < end; start++)
+					if (CWPControlService.getAllowedMorseCharacters().indexOf(source.charAt(start)) < 0)
+						return "";
+				
+				return null;
+			}
+		};
+		morseEdit.setFilters(new InputFilter[]{filter});
 
 		/* Start CWP service */
 		startService(new Intent(this, CWPControlService.class));
