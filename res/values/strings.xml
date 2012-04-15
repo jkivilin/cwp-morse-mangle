@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">CWP Morse Mangle</string>
+    <string name="layout_number1">1</string>
+    <string name="layout_select_channel">Select channel:</string>
+    <string name="layout_send_morse">Send morse</string>
+    <string name="layout_received_messages">Received messages</string>
+    <string name="layout_sample_morse">SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890 SOS SOS SOS morse message sample plaplapla pla pla 0123457890</string>
+    <string name="menu_clear_messages">Clear messages</string>
+    <string name="menu_send_sos">Send S.O.S.</string>
+    <string name="menu_settings">Settings</string>
+    <string name="layout_image_desc">Send manual message by pushing and releasing this image/button</string>
+    <string name="pref_cwp_server_setup">CWP Server Setup</string>
+    <string name="pref_hostname">Host name</string>
+    <string name="pref_server_address">Server address</string>
+    <string name="pref_server_port">Server port</string>
+    <string name="pref_morse_setup">Morse setup</string>
+    <string name="pref_morse_speed">Sending speed</string>
+    <string name="app_main_settings">CWP Morse Mangle Settings</string>
+    <string name="toast_set_channel_to">Set channel to</string>
+    <string name="pref_tone">Allow beep</string>
+    <string name="pref_vibrator">Allow vibration</string>
+    <string name="pref_lamp_setup">Signal notifications</string>
+
+</resources>

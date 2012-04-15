@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory
+        android:key="cwp_server_setup"
+        android:title="@string/pref_cwp_server_setup" >
+        <EditTextPreference
+            android:key="hostname"
+            android:title="@string/pref_server_address" />
+        <EditTextPreference
+            android:key="hostport"
+            android:title="@string/pref_server_port" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="morse_setup"
+        android:title="@string/pref_morse_setup" >
+        <ListPreference
+            android:entries="@array/pref_morse_speed_entries"
+            android:entryValues="@array/pref_morse_speed_entryvalues"
+            android:key="morse_speed"
+            android:title="@string/pref_morse_speed" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="lamp_setup"
+        android:title="@string/pref_lamp_setup" >
+        <CheckBoxPreference
+            android:key="allow_beep"
+            android:title="@string/pref_tone" />
+        <CheckBoxPreference
+            android:key="allow_vibrator"
+            android:title="@string/pref_vibrator" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
