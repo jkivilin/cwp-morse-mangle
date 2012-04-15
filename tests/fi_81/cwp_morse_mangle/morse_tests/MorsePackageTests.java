@@ -2,6 +2,8 @@ package fi_81.cwp_morse_mangle.morse_tests;
 
 import org.junit.Test;
 
+import android.util.Log;
+
 import fi_81.cwp_morse_mangle.morse.BitString;
 import fi_81.cwp_morse_mangle.morse.MorseChar;
 import fi_81.cwp_morse_mangle.morse.MorseCharList;
@@ -10,15 +12,17 @@ import fi_81.cwp_morse_mangle.morse.MorseCodec;
 import junit.framework.TestCase;
 
 public class MorsePackageTests extends TestCase {
+	private static final String TAG = "MorsePackageTests";
+
 	@Test
-	public void testMorseChar() {
+	public void test1_MorseChar() {
 		MorseChar mc0 = new MorseChar(new BitString("111"), 't');
 		MorseChar mc1 = new MorseChar(new BitString("1"), 'e');
 		MorseChar mc2 = new MorseChar(new BitString("101"), 'i');
 
 		MorseChar mc3 = new MorseChar(new BitString("10111"), 'a');
 		MorseChar mc4 = new MorseChar(new BitString("11101"), 'n');
-		
+
 		assertTrue(mc0.getCharacter() == 't');
 		assertTrue(mc0.getMorseLength() == 3);
 		assertTrue(mc0.compareTo(new BitString("111")) == 0);
@@ -59,17 +63,21 @@ public class MorsePackageTests extends TestCase {
 	}
 
 	@Test
-	public void testMorseCharList() {
-		assertEquals(MorseCharList.morseBitsToCharacter(new BitString("111")), 't');
-		assertEquals(MorseCharList.morseBitsToCharacter(new BitString("11101")), 'n');
-		assertEquals(MorseCharList.morseBitsToCharacter(BitString.newZeros(3)), 'Z');
-		assertEquals(MorseCharList.morseBitsToCharacter(new BitString("1111")), 'Z');
+	public void test2_MorseCharList() {
+		assertEquals(MorseCharList.morseBitsToCharacter(new BitString("111")),
+				't');
+		assertEquals(
+				MorseCharList.morseBitsToCharacter(new BitString("11101")), 'n');
+		assertEquals(MorseCharList.morseBitsToCharacter(BitString.newZeros(3)),
+				'Z');
+		assertEquals(MorseCharList.morseBitsToCharacter(new BitString("1111")),
+				'Z');
 
-		System.out.println(MorseCharList.getAllowedCharacters());
+		Log.d(TAG, new String(MorseCharList.getAllowedCharacters()));
 	}
 
 	@Test
-	public void testMorseCodec_encode() {
+	public void test3_MorseCodec_encode() {
 		String sos_in = "sos";
 		BitString sos_out = new BitString("101010001110111011100010101");
 
@@ -105,11 +113,11 @@ public class MorsePackageTests extends TestCase {
 		assertEquals(MorseCodec.encodeMessageToMorse("eI IeIee  e"),
 				new BitString("1000000010001000100000001"));
 
-		System.out.println(MorseCodec.encodeMessageToMorse("sos"));
+		Log.d(TAG, MorseCodec.encodeMessageToMorse("sos").toString());
 	}
 
 	@Test
-	public void testMorseCodec_decode() {
+	public void test4_MorseCodec_decode() {
 		assertEquals(MorseCodec.trimMorseString(new BitString("010")),
 				new BitString("1"));
 		assertEquals(MorseCodec.trimMorseString(new BitString("010000")),
