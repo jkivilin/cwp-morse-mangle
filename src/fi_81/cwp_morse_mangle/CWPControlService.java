@@ -84,6 +84,7 @@ public class CWPControlService extends Service {
 
 					synchronized (CWPControlService.this) {
 						up = recvStateUp;
+						recvStateUp = !recvStateUp;
 					}
 
 					try {
@@ -93,10 +94,6 @@ public class CWPControlService extends Service {
 							Thread.sleep(2000);
 					} catch (InterruptedException e) {
 						return;
-					}
-
-					synchronized (CWPControlService.this) {
-						recvStateUp = !recvStateUp;
 					}
 
 					notifyStateChange();
@@ -151,8 +148,8 @@ public class CWPControlService extends Service {
 	}
 
 	/** Registers notification callbacks */
-	public void registerNotifications(CWPControlNotification notify,
-			Handler handler) {
+	public synchronized void registerNotifications(
+			CWPControlNotification notify, Handler handler) {
 		Log.d(TAG, "registerNotifications()");
 
 		this.notify = notify;
@@ -164,18 +161,14 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to send stateChange notifications to activity */
-	private void notifyStateChange() {
+	private synchronized void notifyStateChange() {
 		if (notify != null) {
-			int state;
+			int state = CWPControlNotification.STATE_DOWN;
 
-			synchronized (this) {
-				state = CWPControlNotification.STATE_DOWN;
-
-				if (recvStateUp && sendStateUp)
-					state = CWPControlNotification.STATE_DOUBLE_UP;
-				else if (recvStateUp || sendStateUp)
-					state = CWPControlNotification.STATE_UP;
-			}
+			if (recvStateUp && sendStateUp)
+				state = CWPControlNotification.STATE_DOUBLE_UP;
+			else if (recvStateUp || sendStateUp)
+				state = CWPControlNotification.STATE_UP;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			final int finalState = state;
@@ -188,7 +181,7 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to notification of updated morse message to activity */
-	private void notifyMorseUpdates() {
+	private synchronized void notifyMorseUpdates() {
 		if (notify != null) {
 			final String morse = getMorseMessage();
 
