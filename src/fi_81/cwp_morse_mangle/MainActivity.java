@@ -17,14 +17,19 @@ import android.os.Vibrator;
 import android.text.InputFilter;
 import android.text.Spanned;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnKeyListener;
 import android.view.View.OnTouchListener;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
@@ -35,6 +40,9 @@ public class MainActivity extends Activity {
 
 	/* Input */
 	private EditText morseEdit;
+	private Button morseButton;
+	private ProgressBar morseProgress;
+	private boolean sendingMorseMessage = false;
 
 	/* Visualization variables */
 	private ImageView lampImage;
@@ -86,6 +94,62 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	/** To report touching state to service */
+	private void setTouchingState(boolean touching) {
+		if (touchingLamp == touching)
+			return;
+
+		touchingLamp = touching;
+
+		/* push state change to CWP service */
+		if (serviceBound)
+			cwpService.setSendingState(touchingLamp);
+	}
+
+	/** Called when sending morse message completes */
+	private void sendingMorseMessageComplete() {
+		if (!sendingMorseMessage)
+			return;
+
+		/* Clear morse edit */
+		morseEdit.setText("");
+
+		/* Re-enable morse editor */
+		morseEdit.setEnabled(true);
+
+		/* Keep button disable (editor is empty) */
+		morseButton.setEnabled(false);
+
+		/* Hide spinner */
+		morseProgress.setVisibility(View.GONE);
+
+		/* clear send state */
+		sendingMorseMessage = false;
+	}
+
+	/** Called when sending morse message to server */
+	private void sendMorseMessage() {
+		sendingMorseMessage = true;
+
+		/* Disable touching */
+		setTouchingState(false);
+
+		/* Disable morse button and editor */
+		morseButton.setEnabled(false);
+		morseEdit.setEnabled(false);
+
+		/* Make spinner visible */
+		morseProgress.setVisibility(View.VISIBLE);
+
+		/* Pass morse message to CWP Service for transfer */
+		if (serviceBound) {
+			cwpService.sendMorseMessage(morseEdit.getText().toString());
+		} else {
+			/* should not be here, but lets handle this anyway */
+			sendingMorseMessageComplete();
+		}
+	}
+
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -113,34 +177,26 @@ public class MainActivity extends Activity {
 			public boolean onTouch(View v, MotionEvent event) {
 				boolean up = false;
 
+				/* Ignore lamp when sending morse message */
+				if (sendingMorseMessage || !serviceBound)
+					return false;
+
 				switch (event.getActionMasked()) {
 				case MotionEvent.ACTION_DOWN:
 					/* touching */
-
 					Log.d(TAG, "onTouch(ACTION_DOWN)");
 
-					touchingLamp = true;
-
-					/* push state change to CWP service */
-					if (serviceBound)
-						cwpService.setSendingState(touchingLamp);
-
+					setTouchingState(true);
 					return true;
 
 				case MotionEvent.ACTION_UP:
 					up = true;
 				case MotionEvent.ACTION_CANCEL:
 					/* end of touch */
-
 					Log.d(TAG, up ? "onTouch(ACTION_UP)"
 							: "onTouch(ACTION_CANCEL)");
 
-					touchingLamp = false;
-
-					/* push state change to CWP service */
-					if (serviceBound)
-						cwpService.setSendingState(touchingLamp);
-
+					setTouchingState(false);
 					return true;
 				}
 
@@ -148,14 +204,43 @@ public class MainActivity extends Activity {
 			}
 		});
 
-		/* Handle allowed input characters filter for editing morse message */
+		/* Handle of editing morse message */
 		morseEdit = (EditText) findViewById(R.id.edit_morse);
+		morseButton = (Button) findViewById(R.id.button_send_morse);
+		morseProgress = (ProgressBar) findViewById(R.id.progress_morse);
+
+		morseEdit.setEnabled(false);
+		morseButton.setEnabled(false);
+
+		/* enable send button when there is some input entered */
+		morseEdit.setOnKeyListener(new OnKeyListener() {
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				Log.d(TAG, "onKey()");
+
+				/* If already sending, do not re-enable button */
+				if (sendingMorseMessage)
+					return false;
+
+				morseButton
+						.setEnabled(morseEdit.getText().toString().length() > 0);
+				return false;
+			}
+		});
+
+		/* send message when button is pressed */
+		morseButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				sendMorseMessage();
+			}
+		});
+
+		/* filter invalid morse characters */
 		InputFilter filter = new InputFilter() {
 			public CharSequence filter(CharSequence source, int start, int end,
 					Spanned dest, int dstart, int dend) {
-				for (; start < end; start++)
+				for (int i = start; i < end; i++)
 					if (CWPControlService.getAllowedMorseCharacters().indexOf(
-							source.charAt(start)) < 0)
+							source.charAt(i)) < 0)
 						return "";
 
 				return null;
@@ -236,7 +321,7 @@ public class MainActivity extends Activity {
 			tone.stopTone();
 		if (vibrator != null)
 			vibrator.cancel();
-		
+
 		/* Maybe not needed, but clear fields set at onCreate() anyway */
 		vibrator = null;
 		tone = null;
@@ -245,6 +330,7 @@ public class MainActivity extends Activity {
 		lampImageGreen = null;
 		lampImage = null;
 		morseEdit = null;
+		morseButton = null;
 
 		super.onDestroy();
 	}
@@ -303,6 +389,13 @@ public class MainActivity extends Activity {
 		public void morseUpdated(String morse) {
 			Log.d(TAG, "receivedMorseMessage(" + morse + ")");
 		}
+
+		@Override
+		public void morseMessageComplete() {
+			Log.d(TAG, "morseMessageComplete()");
+
+			sendingMorseMessageComplete();
+		}
 	};
 
 	/** Callbacks for service binding, passed to bindService() */
@@ -321,7 +414,10 @@ public class MainActivity extends Activity {
 			/* Enable notifications */
 			cwpService.registerNotifications(cwpNotifications, new Handler());
 
-			/* update touching state */
+			/* Enable GUI objects */
+			morseEdit.setEnabled(true);
+
+			/* Update touching state */
 			cwpService.setSendingState(touchingLamp);
 		}
 

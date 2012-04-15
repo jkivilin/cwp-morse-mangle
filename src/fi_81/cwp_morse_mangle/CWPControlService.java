@@ -26,6 +26,9 @@ public class CWPControlService extends Service {
 	/* Received morse string */
 	private String morseMessage = "";
 
+	/* Sending morse state */
+	private int sendingMorseCount = 0;
+
 	/* Thread-safe setter & getter for morseMessage */
 	private synchronized void setMorseMessage(String morse) {
 		morseMessage = morse;
@@ -63,6 +66,11 @@ public class CWPControlService extends Service {
 		 * code and morse message string has been updated as result.
 		 */
 		abstract public void morseUpdated(String latest);
+
+		/**
+		 * Called when CWPService completes sending morse message.
+		 */
+		abstract public void morseMessageComplete();
 	}
 
 	@Override
@@ -80,11 +88,14 @@ public class CWPControlService extends Service {
 		ioThread = new Thread(new Runnable() {
 			public void run() {
 				while (!ioThreadStop) {
-					boolean up;
+					boolean up, sendingComplete = false;
 
 					synchronized (CWPControlService.this) {
 						up = recvStateUp;
-						recvStateUp = !recvStateUp;
+
+						if (sendingMorseCount > 0)
+							if (--sendingMorseCount == 0)
+								sendingComplete = true;
 					}
 
 					try {
@@ -96,7 +107,14 @@ public class CWPControlService extends Service {
 						return;
 					}
 
+					synchronized (CWPControlService.this) {
+						recvStateUp = !recvStateUp;
+					}
+
 					notifyStateChange();
+
+					if (sendingComplete)
+						notifyMorseMessageComplete();
 				}
 			}
 		});
@@ -161,51 +179,104 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to send stateChange notifications to activity */
-	private synchronized void notifyStateChange() {
-		if (notify != null) {
-			int state = CWPControlNotification.STATE_DOWN;
+	private void notifyStateChange() {
+		int state = CWPControlNotification.STATE_DOWN;
+		CWPControlNotification notify;
+		Handler handler;
 
+		synchronized (this) {
 			if (recvStateUp && sendStateUp)
 				state = CWPControlNotification.STATE_DOUBLE_UP;
 			else if (recvStateUp || sendStateUp)
 				state = CWPControlNotification.STATE_UP;
 
-			/* Might be called from IO-thread, need to dispatch to UI thread */
+			notify = this.notify;
+			handler = notifyHandler;
+		}
+
+		if (notify != null) {
 			final int finalState = state;
-			notifyHandler.post(new Runnable() {
+			final CWPControlNotification notifyFinal = notify;
+
+			/* Might be called from IO-thread, need to dispatch to UI thread */
+			handler.post(new Runnable() {
 				public void run() {
-					notify.stateChange(finalState);
+					notifyFinal.stateChange(finalState);
 				}
 			});
 		}
 	}
 
 	/** Called when need to notification of updated morse message to activity */
-	private synchronized void notifyMorseUpdates() {
+	private void notifyMorseUpdates() {
+		CWPControlNotification notify;
+		Handler handler;
+		String morse;
+
+		synchronized (this) {
+			notify = this.notify;
+			handler = notifyHandler;
+			morse = getMorseMessage();
+		}
+
 		if (notify != null) {
-			final String morse = getMorseMessage();
+			final String morseFinal = morse;
+			final CWPControlNotification notifyFinal = notify;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
-			notifyHandler.post(new Runnable() {
+			handler.post(new Runnable() {
 				public void run() {
-					notify.morseUpdated(morse);
+					notifyFinal.morseUpdated(morseFinal);
+				}
+			});
+		}
+	}
+
+	/** Called when sending morse message completes */
+	private void notifyMorseMessageComplete() {
+		CWPControlNotification notify;
+		Handler handler;
+
+		synchronized (this) {
+			notify = this.notify;
+			handler = notifyHandler;
+		}
+
+		if (notify != null) {
+			final CWPControlNotification notifyFinal = notify;
+
+			/* Might be called from IO-thread, need to dispatch to UI thread */
+			handler.post(new Runnable() {
+				public void run() {
+					notifyFinal.morseMessageComplete();
 				}
 			});
 		}
 	}
 
 	/** Called by MainActivity when touching lamp-image */
-	public synchronized void setSendingState(boolean setUpState) {
-		if (sendStateUp != setUpState) {
-			sendStateUp = setUpState;
+	public void setSendingState(boolean setUpState) {
+		boolean changed = false;
 
-			/* Notify UI of state change */
-			notifyStateChange();
+		synchronized (this) {
+			if (sendStateUp != setUpState) {
+				sendStateUp = setUpState;
+				changed = true;
+			}
 		}
+
+		/* Notify UI of state change */
+		if (changed)
+			notifyStateChange();
 	}
 
 	/** Returns list of allowed morse characters */
 	public static String getAllowedMorseCharacters() {
 		return "abcd0123";
+	}
+
+	/** Pushes morse message to CWP server */
+	public synchronized void sendMorseMessage(String morse) {
+		sendingMorseCount = morse.length();
 	}
 }

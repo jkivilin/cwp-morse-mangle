@@ -50,6 +50,14 @@
                 android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
+            <ProgressBar
+                android:id="@+id/progress_morse"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone" />
+
             <Button
                 android:id="@+id/button_send_morse"
                 android:layout_width="wrap_content"
