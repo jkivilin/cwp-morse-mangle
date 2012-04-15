@@ -24,7 +24,17 @@ public class DefaultSettings {
 	}
 
 	public static String getMorseSpeed(SharedPreferences settings) {
-		return settings.getString("morse_speed", MORSE_SPEED_DEFAULT);
+		String value = settings.getString("morse_speed", MORSE_SPEED_DEFAULT);
+
+		/* validate old setting */
+		if (value.compareTo("slow") == 0)
+			return value;
+		else if (value.compareTo("med") == 0)
+			return value;
+		else if (value.compareTo("fast") == 0)
+			return value;
+
+		return MORSE_SPEED_DEFAULT;
 	}
 
 	public static boolean getBeep(SharedPreferences settings) {
@@ -44,7 +54,10 @@ public class DefaultSettings {
 	}
 
 	public static int getMorseSpeedMillisec(SharedPreferences settings) {
-		String value = getMorseSpeed(settings);
+		return getMorseSpeedMillisec(getMorseSpeed(settings));
+	}
+
+	public static int getMorseSpeedMillisec(String value) {
 		int millisec = MORSE_SPEED_MED;
 
 		if (value.compareTo("slow") == 0)

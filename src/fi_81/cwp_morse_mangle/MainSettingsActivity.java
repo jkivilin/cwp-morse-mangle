@@ -61,17 +61,18 @@ public class MainSettingsActivity extends PreferenceActivity implements
 
 		/* convert speed value to speed text */
 		int idx = getMorseSpeedIndex(speedValue);
-		String speedText = getMorseSpeedText(idx);
+		String speedText = getMorseSpeedSummary(idx, speedValue);
 
 		morseSpeed.setValueIndex(idx);
 		morseSpeed.setSummary(speedText);
 	}
 
-	private String getMorseSpeedText(int idx) {
+	private String getMorseSpeedSummary(int idx, String value) {
 		String[] entries = getResources().getStringArray(
 				R.array.pref_morse_speed_entries);
 
-		return entries[idx];
+		return entries[idx] + " ("
+				+ DefaultSettings.getMorseSpeedMillisec(value) + " ms)";
 	}
 
 	private int getMorseSpeedIndex(String speedValue) {
@@ -128,7 +129,7 @@ public class MainSettingsActivity extends PreferenceActivity implements
 			String value = (String) newValue;
 			int idx = getMorseSpeedIndex(value);
 
-			morseSpeed.setSummary(getMorseSpeedText(idx));
+			morseSpeed.setSummary(getMorseSpeedSummary(idx, value));
 
 			return true;
 		}
