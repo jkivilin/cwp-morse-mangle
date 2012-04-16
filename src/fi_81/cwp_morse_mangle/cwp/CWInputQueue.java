@@ -1,6 +1,6 @@
 package fi_81.cwp_morse_mangle.cwp;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 import fi_81.cwp_morse_mangle.cwp.CWave;
 
@@ -8,7 +8,7 @@ public class CWInputQueue {
 	private byte previousType;
 	private int previousTimestamp;
 	private boolean mergeLastUpWave;
-	private Vector<CWave> waveQueue;
+	private ArrayList<CWave> waveQueue;
 
 	public CWInputQueue() {
 		/* New connection starts with state down and timestamp zero */
@@ -16,7 +16,7 @@ public class CWInputQueue {
 		previousTimestamp = 0;
 		mergeLastUpWave = false;
 
-		waveQueue = new Vector<CWave>(16, 8);
+		waveQueue = new ArrayList<CWave>();
 	}
 
 	public byte getCurrentState() {
@@ -61,7 +61,9 @@ public class CWInputQueue {
 
 			mergeLastUpWave = false;
 
-			waveQueue.lastElement().duration += duration;
+			CWave lastWave = waveQueue.get(waveQueue.size() - 1);
+
+			lastWave.duration += duration;
 			previousTimestamp += duration;
 
 			return;
@@ -84,7 +86,7 @@ public class CWInputQueue {
 		return waveQueue.size();
 	}
 
-	public Vector<CWave> getQueue() {
+	public ArrayList<CWave> getQueue() {
 		return waveQueue;
 	}
 

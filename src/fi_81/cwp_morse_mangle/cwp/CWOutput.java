@@ -10,13 +10,13 @@ import fi_81.cwp_morse_mangle.morse.BitString;
 public class CWOutput {
 	/* Callbacks from output, frequency change, state changes */
 	public interface CWOutputNotification {
-		public abstract void frequencyChange(int newFreq);
+		public abstract void frequencyChange(long newFreq);
 
 		public abstract void stateChange(byte newState, int value);
 	}
 
 	public class CWOutputNotificationNone implements CWOutputNotification {
-		public void frequencyChange(int newFreq) {
+		public void frequencyChange(long newFreq) {
 		}
 
 		public void stateChange(byte newState, int value) {
@@ -29,6 +29,7 @@ public class CWOutput {
 
 	private boolean inManualUp;
 	private long manualUpStartTime;
+	private long delayedFreq = -1;
 
 	public CWOutput(long connectionStartTime) {
 		this(null, connectionStartTime);
@@ -119,12 +120,19 @@ public class CWOutput {
 		return true;
 	}
 
-	public boolean sendFrequenceChange(int newFreq) {
+	public boolean sendFrequenceChange(long newFreq) {
+		if (newFreq < 1 || -newFreq < Integer.MIN_VALUE)
+			return true;
+		
 		/* Current send state is at 'down' always except when inManualUp. */
-		if (inManualUp)
-			return false;
+		if (inManualUp) {
+			delayedFreq = newFreq;
+			
+			return true;
+		}
 
 		queue.add(new CWFrequencyChange(newFreq));
+		delayedFreq = -1;
 
 		return true;
 	}
@@ -154,6 +162,8 @@ public class CWOutput {
 			queue.add(new CWStateChange(stateChange, upStateDuration, timestamp));
 
 			inManualUp = false;
+			sendFrequenceChange(delayedFreq);
+			
 			return true;
 		}
 
@@ -175,7 +185,7 @@ public class CWOutput {
 	}
 
 	public boolean sendDown() {
-		return sendStateChange(CWStateChange.TYPE_DOWN_TO_UP);
+		return sendStateChange(CWStateChange.TYPE_UP_TO_DOWN);
 	}
 
 	public boolean sendUp() {

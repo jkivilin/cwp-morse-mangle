@@ -51,18 +51,6 @@ public class CWPControlService extends Service {
 	private CWPControlNotification notify = null;
 	private Handler notifyHandler = null;
 
-	/* Send and receive channel states */
-	private boolean recvStateUp = false;
-	private boolean sendStateUp = false;
-	private long frequency = 1;
-
-	/* Received morse string */
-	private String morseMessage = "";
-
-	private String getMorseMessage() {
-		return morseMessage;
-	}
-
 	/* Local process binder with getter of service object */
 	public class CWPControlBinder extends Binder {
 		private static final String TAG = "CWPControlBinder";
@@ -140,9 +128,7 @@ public class CWPControlService extends Service {
 		notifyHandler = handler;
 
 		/* Submit initial state to caller */
-		notifyStateChange();
-		notifyMorseUpdates();
-		notifyFrequencyChange();
+		ioThread.requestCurrentState();
 	}
 
 	/** Returns notifier */
@@ -150,20 +136,20 @@ public class CWPControlService extends Service {
 		return notify;
 	}
 
+	/** Returns handler */
+	private synchronized Handler getClientHandler() {
+		return notifyHandler;
+	}
+
 	/** Called when need to send stateChange notifications to activity */
-	private void notifyStateChange() {
+	public void notifyStateChange(boolean recvStateUp, boolean sendStateUp) {
+		Handler handler = getClientHandler();
+
 		int state = CWPControlNotification.STATE_DOWN;
-		Handler handler;
-
-		/* In IO-thread context */
-		synchronized (this) {
-			if (recvStateUp && sendStateUp)
-				state = CWPControlNotification.STATE_DOUBLE_UP;
-			else if (recvStateUp || sendStateUp)
-				state = CWPControlNotification.STATE_UP;
-
-			handler = notifyHandler;
-		}
+		if (recvStateUp && sendStateUp)
+			state = CWPControlNotification.STATE_DOUBLE_UP;
+		else if (recvStateUp || sendStateUp)
+			state = CWPControlNotification.STATE_UP;
 
 		if (handler != null) {
 			final int finalState = state;
@@ -181,15 +167,8 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to notification of updated morse message to activity */
-	private void notifyMorseUpdates() {
-		Handler handler;
-		String morse;
-
-		/* In IO-thread context */
-		synchronized (this) {
-			handler = notifyHandler;
-			morse = getMorseMessage();
-		}
+	public void notifyMorseUpdates(String morse) {
+		Handler handler = getClientHandler();
 
 		if (handler != null) {
 			final String morseFinal = morse;
@@ -207,13 +186,8 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when sending morse message completes */
-	private void notifyMorseMessageComplete() {
-		Handler handler;
-
-		/* In IO-thread context */
-		synchronized (this) {
-			handler = notifyHandler;
-		}
+	public void notifyMorseMessageComplete() {
+		Handler handler = getClientHandler();
 
 		if (handler != null) {
 			/* Might be called from IO-thread, need to dispatch to UI thread */
@@ -229,15 +203,8 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when received frequency change message */
-	private void notifyFrequencyChange() {
-		Handler handler;
-		long freq;
-
-		/* In IO-thread context */
-		synchronized (this) {
-			handler = notifyHandler;
-			freq = frequency;
-		}
+	public void notifyFrequencyChange(long freq) {
+		Handler handler = getClientHandler();
 
 		if (handler != null) {
 			final long freqFinal = freq;
@@ -256,32 +223,18 @@ public class CWPControlService extends Service {
 
 	/** Called by MainActivity when touching lamp-image */
 	public void setSendingState(boolean setUpState) {
-		boolean changed = false;
-
-		synchronized (this) {
-			if (sendStateUp != setUpState) {
-				sendStateUp = setUpState;
-				changed = true;
-			}
-		}
-
-		/* Notify UI of state change */
-		if (changed)
-			notifyStateChange();
+		Log.d(TAG, "setSendingState: " + setUpState);
+		ioThread.setSendingState(setUpState);
 	}
 
 	/** Pushes morse message to CWP server */
 	public void sendMorseMessage(String morse) {
+		ioThread.sendMorseMessage(morse);
 	}
 
 	/** Pushed frequency change to CWP server */
 	public void setFrequency(long freq) {
-		if (freq == frequency)
-			return;
-
-		frequency = freq;
-
-		notifyFrequencyChange();
+		ioThread.setFrequency(freq);
 	}
 
 	/** Checks if character is allowed for morse message */

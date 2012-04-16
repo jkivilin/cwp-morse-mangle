@@ -1,7 +1,7 @@
 package fi_81.cwp_morse_mangle.cwp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Vector;
 
 import fi_81.cwp_morse_mangle.cwp.CWave;
 import fi_81.cwp_morse_mangle.morse.BitString;
@@ -71,7 +71,7 @@ public class CWaveQueueToMorseCode {
 			} while (adaptionWidth > MORSE_MAX_ADAPTION_WIDTH);
 		}
 
-		Vector<CWave> waves = queue.getQueue();
+		ArrayList<CWave> waves = queue.getQueue();
 		int i, len;
 
 		/*

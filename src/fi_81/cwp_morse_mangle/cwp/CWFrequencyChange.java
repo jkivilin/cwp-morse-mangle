@@ -1,11 +1,11 @@
 package fi_81.cwp_morse_mangle.cwp;
 
 public class CWFrequencyChange extends CWStateChange {
-	public CWFrequencyChange(int freq) {
-		super(CWStateChange.TYPE_FREQUENCY_CHANGE, -freq, 0);
+	public CWFrequencyChange(long newFreq) {
+		super(CWStateChange.TYPE_FREQUENCY_CHANGE, (int)(-newFreq), 0);
 	}
 
-	public int getFrequency() {
+	public long getFrequency() {
 		return -value;
 	}
 }

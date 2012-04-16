@@ -55,6 +55,11 @@ public class CWPControlThread extends Thread {
 	private CWInput cwpIn;
 	private CWOutput cwpOut;
 
+	/* Send and receive channel states */
+	private boolean recvStateUp = false;
+	private boolean sendStateUp = false;
+	private long currFrequency = 1;
+
 	/* Parent service */
 	private CWPControlService cwpService;
 
@@ -96,6 +101,10 @@ public class CWPControlThread extends Thread {
 
 			connState = CONN_RESOLVING_ADDRESS;
 		}
+
+		recvStateUp = false;
+		sendStateUp = false;
+		currFrequency = 1;
 	}
 
 	/** Main loop of thread */
@@ -223,6 +232,10 @@ public class CWPControlThread extends Thread {
 		/* Connection has been created, initialize other components */
 		cwpIn = new CWInput();
 		cwpOut = new CWOutput(connStartTime);
+
+		/* set frequency if not default */
+		if (currFrequency != 1)
+			cwpOut.sendFrequenceChange(currFrequency);
 	}
 
 	/**
@@ -270,7 +283,6 @@ public class CWPControlThread extends Thread {
 
 	private void handleNonBlockingNetworkIO() throws IOException {
 		Iterator<SelectionKey> keyIter = selector.selectedKeys().iterator();
-		boolean connClosed = false;
 		int bytesCopied;
 
 		/* Iterate active selection keys */
@@ -314,13 +326,18 @@ public class CWPControlThread extends Thread {
 						value.getHostPort(), value.getMorseSpeed());
 				break;
 			case CWPThreadValue.TYPE_STATE_CHANGE:
-				// handleNewSendingState(value.isStateUp());
+				handleNewSendingState(value.isStateUp());
 				break;
 			case CWPThreadValue.TYPE_FREQ_CHANGE:
-				// handleNewFrequency(value.getFrequency());
+				handleNewFrequency(value.getFrequency());
 				break;
 			case CWPThreadValue.TYPE_MORSE_MESSAGE:
-				// handleNewMorseMessage(value.getMorseMessage());
+				handleNewMorseMessage(value.getMorseMessage());
+				break;
+			case CWPThreadValue.TYPE_STATE_REQUEST:
+				cwpService.notifyFrequencyChange(currFrequency);
+				cwpService.notifyStateChange(recvStateUp, sendStateUp);
+				cwpService.notifyMorseUpdates("");
 				break;
 			}
 		}
@@ -329,6 +346,32 @@ public class CWPControlThread extends Thread {
 		/*
 		 * if (freeQueue.size() < 16) { queuePush(freeQueue, value.clear()); }
 		 */
+	}
+
+	private void handleNewMorseMessage(String morseMessage) {
+		/* TODO: add functionality */
+	}
+
+	private void handleNewFrequency(long frequency) {
+		if (currFrequency != frequency) {
+			Log.d(TAG, "handleNewFrequency: " + frequency);
+
+			currFrequency = frequency;
+
+			if (connState == CONN_CONNECTED && cwpOut != null)
+				cwpOut.sendFrequenceChange(currFrequency);
+		}
+	}
+
+	private void handleNewSendingState(boolean stateUp) {
+		if (connState == CONN_CONNECTED && cwpOut != null) {
+			Log.d(TAG, "handleNewSendingState: " + stateUp);
+
+			if (stateUp)
+				cwpOut.sendUp();
+			else
+				cwpOut.sendDown();
+		}
 	}
 
 	private void handleNewConfiguration(String hostName, int hostPort,
@@ -370,17 +413,30 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
+	/** Combined handling of */
+
 	/** Handle callbacks from CWInput */
 	private final CWInputNotification inputNotify = new CWInputNotification() {
 		private static final String TAG = "CWPControlThread:inputNotify";
 
-		public void frequencyChange(int newFreq) {
+		public void frequencyChange(long newFreq) {
 			Log.d(TAG, String.format("freq-change: %d", newFreq));
+
+			cwpService.notifyFrequencyChange(newFreq);
 		}
 
 		public void stateChange(byte newState, int value) {
+			boolean isUpState = newState == CWave.TYPE_UP;
+
 			Log.d(TAG, String.format("state-change, state: %d, value: %d",
 					newState, value));
+
+			/* Report state change */
+			if (recvStateUp != isUpState) {
+				recvStateUp = isUpState;
+
+				cwpService.notifyStateChange(recvStateUp, sendStateUp);
+			}
 		}
 
 		public void morseMessage(BitString morseBits) {
@@ -392,13 +448,24 @@ public class CWPControlThread extends Thread {
 	private final CWOutputNotification outputNotify = new CWOutputNotification() {
 		private static final String TAG = "CWPControlThread:outputNotify";
 
-		public void frequencyChange(int newFreq) {
+		public void frequencyChange(long newFreq) {
 			Log.d(TAG, String.format("freq-change: %d", newFreq));
+
+			cwpService.notifyFrequencyChange(newFreq);
 		}
 
 		public void stateChange(byte newState, int value) {
+			boolean isUpState = newState == CWave.TYPE_UP;
+
 			Log.d(TAG, String.format("state-change, state: %d, value: %d",
 					newState, value));
+
+			/* Report state change */
+			if (sendStateUp != isUpState) {
+				sendStateUp = isUpState;
+
+				cwpService.notifyStateChange(recvStateUp, sendStateUp);
+			}
 		}
 	};
 
@@ -443,12 +510,48 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
-	/** Set up new configuration for thread */
+	/** Set up new configuration for server */
 	public void setNewConfiguration(String hostName, int hostPort,
 			int morseSpeed) {
 		/* Push new configuration as message to IO-thread */
 		queuePush(msgQueue, CWPThreadValue.buildConfiguration(hostName,
 				hostPort, morseSpeed));
+
+		/* signal IO-thread of new message */
+		interrupt();
+	}
+
+	/** Set new frequency */
+	public void setFrequency(long freq) {
+		/* Push new frequency to IO-thread */
+		queuePush(msgQueue, CWPThreadValue.buildFreqChange(freq));
+
+		/* signal IO-thread of new message */
+		interrupt();
+	}
+
+	/** Set sending state */
+	public void setSendingState(boolean setUpState) {
+		/* Push new frequency to IO-thread */
+		queuePush(msgQueue, CWPThreadValue.buildStateChange(setUpState));
+
+		/* signal IO-thread of new message */
+		interrupt();
+	}
+
+	/** Set to send morse message */
+	public void sendMorseMessage(String morse) {
+		/* Push new frequency to IO-thread */
+		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(morse));
+
+		/* signal IO-thread of new message */
+		interrupt();
+	}
+
+	/** Request current state from IO-thread */
+	public void requestCurrentState() {
+		/* Push new frequency to IO-thread */
+		queuePush(msgQueue, CWPThreadValue.buildStateRequest());
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -474,6 +577,7 @@ public class CWPControlThread extends Thread {
 		protected static final int TYPE_STATE_CHANGE = 1;
 		protected static final int TYPE_FREQ_CHANGE = 2;
 		protected static final int TYPE_MORSE_MESSAGE = 3;
+		protected static final int TYPE_STATE_REQUEST = 4;
 
 		protected int type;
 		protected long argLong0;
@@ -519,6 +623,17 @@ public class CWPControlThread extends Thread {
 
 			value.type = TYPE_MORSE_MESSAGE;
 			value.argString0 = message;
+			value.argLong0 = 0;
+			value.argInt0 = 0;
+
+			return value;
+		}
+
+		protected static CWPThreadValue buildStateRequest() {
+			CWPThreadValue value = new CWPThreadValue();
+
+			value.type = TYPE_STATE_REQUEST;
+			value.argString0 = null;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
 

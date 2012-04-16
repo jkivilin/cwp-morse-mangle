@@ -9,7 +9,7 @@ import fi_81.cwp_morse_mangle.morse.BitString;
 public class CWInput {
 	/* Callbacks from input, frequency change, state changes and morse messages */
 	public interface CWInputNotification {
-		public abstract void frequencyChange(int newFreq);
+		public abstract void frequencyChange(long frequency);
 
 		public abstract void stateChange(byte newState, int value);
 
@@ -17,7 +17,7 @@ public class CWInput {
 	}
 
 	public class CWInputNotificationNone implements CWInputNotification {
-		public void frequencyChange(int newFreq) {
+		public void frequencyChange(long newFreq) {
 		}
 
 		public void stateChange(byte newState, int value) {

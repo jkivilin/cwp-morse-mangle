@@ -160,7 +160,7 @@ public class CWPPackageTests extends TestCase {
 
 	@Test
 	public void test3_CWInput() {
-		final LinkedList<Integer> freqs = new LinkedList<Integer>();
+		final LinkedList<Long> freqs = new LinkedList<Long>();
 		final byte test_array0[] = {
 				b(0x00), b(0x00), b(0x00), b(0x01), /* state-change: state-up, timestamp = 1 */
 				b(0x00), b(0x1f),					/* state-change: state-down, duration = 0x1f */
@@ -253,8 +253,8 @@ public class CWPPackageTests extends TestCase {
 		try {
 			cwi.processInput(new CWInputNotification() {
 				@Override
-				public void frequencyChange(int newFreq) {
-					freqs.add(new Integer(newFreq));
+				public void frequencyChange(long newFreq) {
+					freqs.add(new Long(newFreq));
 				}
 
 				@Override
@@ -381,7 +381,7 @@ public class CWPPackageTests extends TestCase {
 			for (int i = 0; i < waitTime + 20; i += 10) {
 				cwi.processInput(new CWInputNotification() {
 					@Override
-					public void frequencyChange(int newFreq) {
+					public void frequencyChange(long newFreq) {
 					}
 
 					@Override
