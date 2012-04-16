@@ -1,5 +1,7 @@
 package fi_81.cwp_morse_mangle.morse;
 
+import java.util.Arrays;
+
 public class MorseCodec {
 	/* Each morse character is separated with 000 and word by 0000000. */
 	private final static BitString charStop = BitString.newZeros(3);
@@ -131,5 +133,14 @@ public class MorseCodec {
 		}
 
 		return output.toString();
+	}
+
+	/* Check if character allowed for _input_ */
+	public static boolean isAllowedMorseCharacter(char ch) {
+		/* Space is special, and not in morse-code list. */
+		if (ch == ' ')
+			return true;
+
+		return Arrays.binarySearch(MorseCharList.getAllowedCharacters(), ch) >= 0;
 	}
 }

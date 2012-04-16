@@ -1,7 +1,5 @@
 package fi_81.cwp_morse_mangle;
 
-import java.util.Arrays;
-
 import fi_81.cwp_morse_mangle.morse.BitString;
 import fi_81.cwp_morse_mangle.morse.MorseCharList;
 import fi_81.cwp_morse_mangle.morse.MorseCodec;
@@ -246,12 +244,5 @@ public class CWPControlService extends Service {
 	/** Clear received morse messages */
 	public void clearMorseMessages() {
 		ioThread.requestClearMessages();
-	}
-	
-	/** Checks if character is allowed for morse message */
-	public static boolean isAllowedMorseCharacter(char ch) {		
-		char array[] = MorseCharList.getAllowedCharacters();
-
-		return Arrays.binarySearch(array, ch) >= 0;
 	}
 }

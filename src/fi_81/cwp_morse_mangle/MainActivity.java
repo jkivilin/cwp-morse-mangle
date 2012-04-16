@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlBinder;
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlNotification;
+import fi_81.cwp_morse_mangle.morse.MorseCodec;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -314,7 +315,7 @@ public class MainActivity extends Activity {
 			public CharSequence filter(CharSequence source, int start, int end,
 					Spanned dest, int dstart, int dend) {
 				for (int i = start; i < end; i++)
-					if (!CWPControlService.isAllowedMorseCharacter(source
+					if (!MorseCodec.isAllowedMorseCharacter(source
 							.charAt(i)))
 						return "";
 
