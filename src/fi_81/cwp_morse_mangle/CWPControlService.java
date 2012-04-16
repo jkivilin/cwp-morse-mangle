@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
 
 public class CWPControlService extends Service {
 	/** Callbacks for MainActivity */
@@ -56,7 +55,7 @@ public class CWPControlService extends Service {
 		private static final String TAG = "CWPControlBinder";
 
 		public CWPControlService getService() {
-			Log.d(TAG, "getService()");
+			LogF.d(TAG, "getService()");
 
 			return CWPControlService.this;
 		}
@@ -64,14 +63,14 @@ public class CWPControlService extends Service {
 
 	@Override
 	public IBinder onBind(Intent arg0) {
-		Log.d(TAG, "onBind()");
+		LogF.d(TAG, "onBind()");
 
 		return binder;
 	}
 
 	@Override
 	public void onCreate() {
-		Log.d(TAG, "onCreate()");
+		LogF.d(TAG, "onCreate()");
 
 		/* Start IO-thread */
 		ioThread = new CWPControlThread(this);
@@ -82,14 +81,14 @@ public class CWPControlService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.d(TAG, "onStartCommand()");
+		LogF.d(TAG, "onStartCommand()");
 
 		return super.onStartCommand(intent, flags, startId);
 	}
 
 	@Override
 	public boolean onUnbind(Intent intent) {
-		Log.d(TAG, "onUnbind()");
+		LogF.d(TAG, "onUnbind()");
 
 		/* clear notifications to prevent calling unloaded activity */
 		notify = null;
@@ -99,14 +98,14 @@ public class CWPControlService extends Service {
 
 	@Override
 	public void onRebind(Intent intent) {
-		Log.d(TAG, "onRebind()");
+		LogF.d(TAG, "onRebind()");
 
 		super.onRebind(intent);
 	}
 
 	@Override
 	public void onDestroy() {
-		Log.d(TAG, "onDestroy()");
+		LogF.d(TAG, "onDestroy()");
 
 		ioThread.endWorkAndJoin();
 		ioThread = null;
@@ -122,7 +121,7 @@ public class CWPControlService extends Service {
 	/** Registers notification callbacks */
 	public synchronized void registerNotifications(
 			CWPControlNotification notify, Handler handler) {
-		Log.d(TAG, "registerNotifications()");
+		LogF.d(TAG, "registerNotifications()");
 
 		this.notify = notify;
 		notifyHandler = handler;
@@ -223,7 +222,7 @@ public class CWPControlService extends Service {
 
 	/** Called by MainActivity when touching lamp-image */
 	public void setSendingState(boolean setUpState) {
-		Log.d(TAG, "setSendingState: " + setUpState);
+		LogF.d(TAG, "setSendingState: %b", setUpState);
 		ioThread.setSendingState(setUpState);
 	}
 

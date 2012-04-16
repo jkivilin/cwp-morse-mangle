@@ -22,7 +22,6 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.text.InputFilter;
 import android.text.Spanned;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -73,7 +72,7 @@ public class MainActivity extends Activity {
 
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
-		Log.d(TAG, String.format("visualizeStateChange(%d)", state));
+		LogF.d(TAG, "visualizeStateChange(%d)", state);
 
 		/* Change appearance of the lamp */
 		switch (state) {
@@ -135,8 +134,8 @@ public class MainActivity extends Activity {
 
 	/** To report touching state to service */
 	private void setTouchingState(boolean touching) {
-		Log.d(TAG, String.format("setTouchingState(new: %b, old: %b)",
-				touching, touchingLamp));
+		LogF.d(TAG, "setTouchingState(new: %b, old: %b)", touching,
+				touchingLamp);
 
 		if (touchingLamp == touching)
 			return;
@@ -150,7 +149,7 @@ public class MainActivity extends Activity {
 
 	/** Called when sending morse message completes */
 	private void sendingMorseMessageComplete() {
-		Log.d(TAG, "sendingMorseMessageComplete()");
+		LogF.d(TAG, "sendingMorseMessageComplete()");
 
 		if (!sendingMorseMessage)
 			return;
@@ -176,7 +175,7 @@ public class MainActivity extends Activity {
 
 	/** Called when sending morse message to server */
 	private void sendMorseMessage() {
-		Log.d(TAG, "sendMorseMessage()");
+		LogF.d(TAG, "sendMorseMessage()");
 
 		sendingMorseMessage = true;
 
@@ -215,9 +214,8 @@ public class MainActivity extends Activity {
 
 	/** Called when CWP service changes frequency */
 	private void receivedNewChannelSetting(long freq) {
-		Log.d(TAG, String.format(
-				"receivedNewChannelSetting(new-freq: %d, old-freq: %d)", freq,
-				currentChannel));
+		LogF.d(TAG, "receivedNewChannelSetting(new-freq: %d, old-freq: %d)",
+				freq, currentChannel);
 
 		/* Tell user about new frequency */
 		if (currentChannel != freq) {
@@ -237,7 +235,7 @@ public class MainActivity extends Activity {
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		Log.d(TAG, "onCreate()");
+		LogF.d(TAG, "onCreate()");
 
 		super.onCreate(savedInstanceState);
 
@@ -259,7 +257,7 @@ public class MainActivity extends Activity {
 				switch (event.getActionMasked()) {
 				case MotionEvent.ACTION_DOWN:
 					/* touching */
-					Log.d(TAG, "onTouch(ACTION_DOWN)");
+					LogF.d(TAG, "onTouch(ACTION_DOWN)");
 
 					setTouchingState(true);
 					return true;
@@ -268,7 +266,7 @@ public class MainActivity extends Activity {
 					up = true;
 				case MotionEvent.ACTION_CANCEL:
 					/* end of touch */
-					Log.d(TAG, up ? "onTouch(ACTION_UP)"
+					LogF.d(TAG, up ? "onTouch(ACTION_UP)"
 							: "onTouch(ACTION_CANCEL)");
 
 					setTouchingState(false);
@@ -298,7 +296,7 @@ public class MainActivity extends Activity {
 		/* enable send button when there is some input entered */
 		morseEdit.setOnKeyListener(new OnKeyListener() {
 			public boolean onKey(View v, int keyCode, KeyEvent event) {
-				Log.d(TAG, "onKey()");
+				LogF.d(TAG, "onKey()");
 
 				/* If already sending, do not re-enable button */
 				if (sendingMorseMessage)
@@ -386,14 +384,14 @@ public class MainActivity extends Activity {
 
 	@Override
 	public void onRestart() {
-		Log.d(TAG, "onRestart()");
+		LogF.d(TAG, "onRestart()");
 
 		super.onRestart();
 	}
 
 	@Override
 	public void onStart() {
-		Log.d(TAG, "onStart()");
+		LogF.d(TAG, "onStart()");
 
 		super.onStart();
 
@@ -404,7 +402,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public void onResume() {
-		Log.d(TAG, "onResume()");
+		LogF.d(TAG, "onResume()");
 
 		/* load saved settings */
 		SharedPreferences settings = PreferenceManager
@@ -436,7 +434,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public void onPause() {
-		Log.d(TAG, "onPause()");
+		LogF.d(TAG, "onPause()");
 
 		super.onPause();
 
@@ -465,7 +463,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public void onStop() {
-		Log.d(TAG, "onStop()");
+		LogF.d(TAG, "onStop()");
 
 		super.onStop();
 
@@ -479,7 +477,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public void onDestroy() {
-		Log.d(TAG, "onDestroy()");
+		LogF.d(TAG, "onDestroy()");
 
 		/* Make sure there is no sound or vibration at exit */
 		if (tone != null)
@@ -505,7 +503,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
-		Log.d(TAG, "onSaveInstanceState()");
+		LogF.d(TAG, "onSaveInstanceState()");
 
 		outState.putLong("current_channel", currentChannel);
 		outState.putBoolean("sending_morse_message", sendingMorseMessage);
@@ -515,7 +513,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onRestoreInstanceState(Bundle savedInstanceState) {
-		Log.d(TAG, "onRestoreInstanceState()");
+		LogF.d(TAG, "onRestoreInstanceState()");
 
 		currentChannel = savedInstanceState.getLong("current_channel");
 		sendingMorseMessage = savedInstanceState
@@ -527,7 +525,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		Log.d(TAG, "onCreateOptionsMenu()");
+		LogF.d(TAG, "onCreateOptionsMenu()");
 
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main_menu, menu);
@@ -536,7 +534,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		Log.d(TAG, "onOptionsItemSelected()");
+		LogF.d(TAG, "onOptionsItemSelected()");
 
 		/* Handle item selection */
 		switch (item.getItemId()) {
@@ -595,10 +593,10 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void stateChange(int state) {
-			Log.d(TAG, String.format("stateChange(%d)", state));
+			LogF.d(TAG, "stateChange(%d)", state);
 
 			if (!serviceBound) {
-				Log.w(TAG, "stateChange() callback while service not bound!");
+				LogF.w(TAG, "stateChange() callback while service not bound!");
 				return;
 			}
 
@@ -607,10 +605,10 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void morseUpdated(String morse) {
-			Log.d(TAG, String.format("morseUpdated(%s)", morse));
+			LogF.d(TAG, "morseUpdated(%s)", morse);
 
 			if (!serviceBound) {
-				Log.w(TAG, "morseUpdated() callback while service not bound!");
+				LogF.w(TAG, "morseUpdated() callback while service not bound!");
 				return;
 			}
 
@@ -619,10 +617,10 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void morseMessageComplete() {
-			Log.d(TAG, "morseMessageComplete()");
+			LogF.d(TAG, "morseMessageComplete()");
 
 			if (!serviceBound) {
-				Log.w(TAG,
+				LogF.w(TAG,
 						"morseMessageComplete() callback while service not bound!");
 				return;
 			}
@@ -632,10 +630,10 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void frequencyChange(long freq) {
-			Log.d(TAG, String.format("frequencyChange(%d)", freq));
+			LogF.d(TAG, "frequencyChange(%d)", freq);
 
 			if (!serviceBound) {
-				Log.w(TAG,
+				LogF.w(TAG,
 						"frequencyChange() callback while service not bound!");
 				return;
 			}
@@ -650,7 +648,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
-			Log.d(TAG, "onServiceConnected()");
+			LogF.d(TAG, "onServiceConnected()");
 
 			CWPControlBinder binder = (CWPControlBinder) service;
 
@@ -682,7 +680,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void onServiceDisconnected(ComponentName name) {
-			Log.d(TAG, "onServiceDisconnected()");
+			LogF.d(TAG, "onServiceDisconnected()");
 
 			serviceBound = false;
 			cwpService = null;

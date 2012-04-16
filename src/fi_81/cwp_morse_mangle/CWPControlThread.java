@@ -22,8 +22,6 @@ import fi_81.cwp_morse_mangle.morse.BitString;
 import fi_81.cwp_morse_mangle.morse.MorseCharList;
 import fi_81.cwp_morse_mangle.morse.MorseCodec;
 
-import android.util.Log;
-
 public class CWPControlThread extends Thread {
 	private static final String TAG = "CWPControlThread";
 
@@ -73,9 +71,8 @@ public class CWPControlThread extends Thread {
 		try {
 			selector = Selector.open();
 		} catch (IOException e) {
-			Log.e(TAG,
-					"CWPControlThread(): Selector.open() failed: "
-							+ e.toString());
+			LogF.e(TAG, "CWPControlThread(): Selector.open() failed: %s",
+					e.toString());
 			System.exit(1);
 		}
 
@@ -84,8 +81,8 @@ public class CWPControlThread extends Thread {
 
 	/** Disconnect from server cleanly and setup to resolve hostname */
 	private void resetServerConnection() {
-		Log.d(TAG, "resetServerConnection()");
-		
+		LogF.d(TAG, "resetServerConnection()");
+
 		if (connState == CONN_CONNECTED) {
 			/* Should be non-null */
 			if (connChannel != null) {
@@ -119,8 +116,8 @@ public class CWPControlThread extends Thread {
 	/** Main loop of thread */
 	private void run_loop() {
 		try {
-			Log.d(TAG, "run_loop(): " + connState);
-			
+			LogF.d(TAG, "run_loop(): %d", connState);
+
 			switch (connState) {
 			default:
 			case CONN_NO_CONFIGURATION:
@@ -142,7 +139,8 @@ public class CWPControlThread extends Thread {
 				try {
 					handleConnection();
 				} catch (IOException e) {
-					Log.w(TAG, "Server connection IOException: " + e.toString());
+					LogF.w(TAG, "Server connection IOException: %s",
+							e.toString());
 
 					/* IOException, connection trouble, reset connection */
 					resetServerConnection();
@@ -319,18 +317,16 @@ public class CWPControlThread extends Thread {
 			if (key.isValid() && key.isReadable()) {
 				bytesCopied = connChannel.read(cwpIn.getInBuffer());
 
-				Log.d(TAG, String.format(
-						"handleNonBlockingNetworkIO(): read %d bytes",
-						bytesCopied));
+				LogF.d(TAG, "handleNonBlockingNetworkIO(): read %d bytes",
+						bytesCopied);
 			}
 
 			/* Output writer */
 			if (key.isValid() && key.isWritable()) {
 				bytesCopied = connChannel.write(cwpOut.getOutputBuffer());
 
-				Log.d(TAG, String.format(
-						"handleNonBlockingNetworkIO(): written %d bytes",
-						bytesCopied));
+				LogF.d(TAG, "handleNonBlockingNetworkIO(): written %d bytes",
+						bytesCopied);
 
 				/* Output buffer emptied, stop writing */
 				if (cwpOut.getOutputBuffer().remaining() == 0)
@@ -397,7 +393,7 @@ public class CWPControlThread extends Thread {
 
 	private void handleNewFrequency(long frequency) {
 		if (currFrequency != frequency) {
-			Log.d(TAG, "handleNewFrequency: " + frequency);
+			LogF.d(TAG, "handleNewFrequency: %d", frequency);
 
 			currFrequency = frequency;
 
@@ -411,7 +407,7 @@ public class CWPControlThread extends Thread {
 			return;
 
 		if (connState == CONN_CONNECTED && cwpOut != null) {
-			Log.d(TAG, "handleNewSendingState: " + stateUp);
+			LogF.d(TAG, "handleNewSendingState: %b", stateUp);
 
 			if (stateUp)
 				cwpOut.sendUp();
@@ -466,7 +462,7 @@ public class CWPControlThread extends Thread {
 		private static final String TAG = "CWPControlThread:inputNotify";
 
 		public void frequencyChange(long newFreq) {
-			Log.d(TAG, String.format("freq-change: %d", newFreq));
+			LogF.d(TAG, "freq-change: %d", newFreq);
 
 			cwpService.notifyFrequencyChange(newFreq);
 		}
@@ -474,8 +470,7 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			Log.d(TAG, String.format("state-change, state: %d, value: %d",
-					newState, value));
+			LogF.d(TAG, "state-change, state: %d, value: %d", newState, value);
 
 			/* Report state change */
 			if (recvStateUp != isUpState) {
@@ -486,10 +481,8 @@ public class CWPControlThread extends Thread {
 		}
 
 		public void morseMessage(BitString morseBits) {
-			Log.d(TAG,
-					String.format("morse-message: %s [%s]",
-							morseBits.toString(),
-							MorseCodec.decodeMorseToMessage(morseBits)));
+			LogF.d(TAG, "morse-message: %s [%s]", morseBits.toString(),
+					MorseCodec.decodeMorseToMessage(morseBits));
 
 			/* Gather all message bits */
 			if (morseMessageBits != null)
@@ -509,7 +502,7 @@ public class CWPControlThread extends Thread {
 				String message = MorseCodec
 						.decodeMorseToMessage(morseMessageBits);
 
-				Log.d(TAG, "Received morse-message: '" + message + "'");
+				LogF.d(TAG, "Received morse-message: '%s'", message);
 
 				/* Fill to main message buffer */
 				morseMessage.append(' ');
@@ -546,7 +539,7 @@ public class CWPControlThread extends Thread {
 		private static final String TAG = "CWPControlThread:outputNotify";
 
 		public void frequencyChange(long newFreq) {
-			Log.d(TAG, String.format("freq-change: %d", newFreq));
+			LogF.d(TAG, "freq-change: %d", newFreq);
 
 			cwpService.notifyFrequencyChange(newFreq);
 		}
@@ -554,8 +547,7 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			Log.d(TAG, String.format("state-change, state: %d, value: %d",
-					newState, value));
+			LogF.d(TAG, "state-change, state: %d, value: %d", newState, value);
 
 			/* Report state change */
 			if (sendStateUp != isUpState) {
@@ -586,9 +578,8 @@ public class CWPControlThread extends Thread {
 		try {
 			selector.close();
 		} catch (IOException e) {
-			Log.w(TAG,
-					"run()/cleanup: selector.close() exception: "
-							+ e.toString());
+			LogF.w(TAG, "run()/cleanup: selector.close() exception: %s",
+					e.toString());
 		}
 	}
 
@@ -601,9 +592,8 @@ public class CWPControlThread extends Thread {
 			join();
 		} catch (InterruptedException ie) {
 			/* UI-thread interrupted from wait */
-			Log.w(TAG, String.format(
-					"endWorkAndJoin(): joining ioThread failed [%s]",
-					ie.toString()));
+			LogF.w(TAG, "endWorkAndJoin(): joining ioThread failed [%s]",
+					ie.toString());
 		}
 	}
 
