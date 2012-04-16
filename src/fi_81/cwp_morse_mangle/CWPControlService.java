@@ -121,6 +121,7 @@ public class CWPControlService extends Service {
 		Log.d(TAG, "onDestroy()");
 
 		ioThread.endWorkAndJoin();
+		ioThread = null;
 
 		super.onDestroy();
 	}

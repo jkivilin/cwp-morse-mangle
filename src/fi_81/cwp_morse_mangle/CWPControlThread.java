@@ -5,12 +5,20 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import fi_81.cwp_morse_mangle.cwp.CWStateChangeQueueFromMorseCode;
+import fi_81.cwp_morse_mangle.cwp.*;
+import fi_81.cwp_morse_mangle.cwp.CWInput.CWInputNotification;
+import fi_81.cwp_morse_mangle.cwp.CWOutput.CWOutputNotification;
+import fi_81.cwp_morse_mangle.morse.BitString;
 
 import android.util.Log;
 
@@ -29,6 +37,9 @@ public class CWPControlThread extends Thread {
 	/* Synchronized queue used for passing data to IO-thread */
 	private Vector<CWPThreadValue> msgQueue = new Vector<CWPThreadValue>(16);
 
+	/* Selector for blocking on non-blocking sockets */
+	private Selector selector;
+
 	/* Initial state does not have server-details, "no configuration" */
 	private int connState = CONN_NO_CONFIGURATION;
 
@@ -41,12 +52,23 @@ public class CWPControlThread extends Thread {
 	private InetSocketAddress connSockAddr;
 	private long connStartTime;
 	private SocketChannel connChannel;
+	private CWInput cwpIn;
+	private CWOutput cwpOut;
 
 	/* Parent service */
 	private CWPControlService cwpService;
 
 	/** Service reference is needed for callbacks */
 	public CWPControlThread(CWPControlService service) {
+		try {
+			selector = Selector.open();
+		} catch (IOException e) {
+			Log.e(TAG,
+					"CWPControlThread(): Selector.open() failed: "
+							+ e.toString());
+			System.exit(1);
+		}
+
 		cwpService = service;
 	}
 
@@ -97,10 +119,19 @@ public class CWPControlThread extends Thread {
 				break;
 
 			case CONN_CONNECTED:
-				sleep(Long.MAX_VALUE);
+				try {
+					handleConnection();
+				} catch (IOException e) {
+					Log.w(TAG, "Server connection IOException: " + e.toString());
+
+					/* IOException, connection trouble, reset connection */
+					resetServerConnection();
+				}
 
 				break;
 			}
+		} catch (ClosedChannelException e) {
+			/* this is does not happen as selector is closed after run_loop() */
 		} catch (InterruptedException ie) {
 			/* woke from sleep */
 		}
@@ -133,7 +164,8 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
-	private void handleCreateConnection() throws InterruptedException {
+	private void handleCreateConnection() throws InterruptedException,
+			ClosedChannelException {
 		connChannel = null;
 
 		try {
@@ -182,6 +214,92 @@ public class CWPControlThread extends Thread {
 			 * back to resolving address.
 			 */
 			connState = CONN_RESOLVING_ADDRESS;
+			return;
+		}
+
+		/* Register read-channel to selector */
+		connChannel.register(selector, SelectionKey.OP_READ);
+
+		/* Connection has been created, initialize other components */
+		cwpIn = new CWInput();
+		cwpOut = new CWOutput(connStartTime);
+	}
+
+	/**
+	 * Handle sending and receiving data from CWP server
+	 * 
+	 * @throws ClosedChannelException
+	 */
+	private void handleConnection() throws IOException {
+		int timeToNextOutWork, numReadyChannels;
+
+		/* CWP output handling */
+		cwpOut.processOutput(outputNotify);
+
+		/* Check if need to register write-channel to selector */
+		if (cwpOut.getOutputBuffer().remaining() > 0) {
+			try {
+				connChannel.register(selector, SelectionKey.OP_WRITE);
+			} catch (CancelledKeyException cke) {
+				/*
+				 * Tried to register key that was cancelled in previous loop.
+				 * Clear cancelled state with selectNow().
+				 */
+				selector.selectNow();
+				connChannel.register(selector, SelectionKey.OP_WRITE);
+			}
+		}
+
+		/* Get time to next CWOutput work */
+		timeToNextOutWork = cwpOut.timeToNext();
+
+		/* Wait for input */
+		if (timeToNextOutWork == 0)
+			numReadyChannels = selector.selectNow();
+		else
+			numReadyChannels = selector.select(timeToNextOutWork < 0 ? 0
+					: timeToNextOutWork);
+
+		/* Receive and send data */
+		if (numReadyChannels > 0)
+			handleNonBlockingNetworkIO();
+
+		/* CWP input handling */
+		cwpIn.processInput(inputNotify);
+	}
+
+	private void handleNonBlockingNetworkIO() throws IOException {
+		Iterator<SelectionKey> keyIter = selector.selectedKeys().iterator();
+		boolean connClosed = false;
+		int bytesCopied;
+
+		/* Iterate active selection keys */
+		while (keyIter.hasNext()) {
+			SelectionKey key = keyIter.next();
+
+			/* Input reader */
+			if (key.isValid() && key.isReadable()) {
+				bytesCopied = connChannel.read(cwpIn.getInBuffer());
+
+				Log.d(TAG, String.format(
+						"handleNonBlockingNetworkIO(): read %d bytes",
+						bytesCopied));
+			}
+
+			/* Output writer */
+			if (key.isValid() && key.isWritable()) {
+				bytesCopied = connChannel.write(cwpOut.getOutputBuffer());
+
+				Log.d(TAG, String.format(
+						"handleNonBlockingNetworkIO(): written %d bytes",
+						bytesCopied));
+
+				/* Output buffer emptied, stop writing */
+				if (cwpOut.getOutputBuffer().remaining() == 0)
+					key.cancel();
+			}
+
+			keyIter.remove();
 		}
 	}
 
@@ -252,13 +370,62 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
+	/** Handle callbacks from CWInput */
+	private final CWInputNotification inputNotify = new CWInputNotification() {
+		private static final String TAG = "CWPControlThread:inputNotify";
+
+		public void frequencyChange(int newFreq) {
+			Log.d(TAG, String.format("freq-change: %d", newFreq));
+		}
+
+		public void stateChange(byte newState, int value) {
+			Log.d(TAG, String.format("state-change, state: %d, value: %d",
+					newState, value));
+		}
+
+		public void morseMessage(BitString morseBits) {
+			Log.d(TAG, String.format("morse-message: %s", morseBits.toString()));
+		}
+	};
+
+	/** Handle callbacks from CWOutput */
+	private final CWOutputNotification outputNotify = new CWOutputNotification() {
+		private static final String TAG = "CWPControlThread:outputNotify";
+
+		public void frequencyChange(int newFreq) {
+			Log.d(TAG, String.format("freq-change: %d", newFreq));
+		}
+
+		public void stateChange(byte newState, int value) {
+			Log.d(TAG, String.format("state-change, state: %d, value: %d",
+					newState, value));
+		}
+	};
+
 	@Override
 	public void run() {
 		while (!isThreadKilled.get())
 			run_loop();
 
-		/* Parent has killed CWP thread, do clean up */
+		/*
+		 * Parent has killed CWP thread, do clean up
+		 */
+
+		cwpIn = null;
+		cwpOut = null;
+
+		resetServerConnection();
+
 		msgQueue.clear();
+		msgQueue = null;
+
+		try {
+			selector.close();
+		} catch (IOException e) {
+			Log.w(TAG,
+					"run()/cleanup: selector.close() exception: "
+							+ e.toString());
+		}
 	}
 
 	/** Signal and wait thread to quit work */
