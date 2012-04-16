@@ -1,7 +1,12 @@
 package fi_81.cwp_morse_mangle;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.SocketChannel;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,7 +38,9 @@ public class CWPControlThread extends Thread {
 	private int morseSpeed = 0;
 
 	/* Current connection setup */
-	private InetAddress currAddr;
+	private InetSocketAddress connSockAddr;
+	private long connStartTime;
+	private SocketChannel connChannel;
 
 	/* Parent service */
 	private CWPControlService cwpService;
@@ -41,6 +48,32 @@ public class CWPControlThread extends Thread {
 	/** Service reference is needed for callbacks */
 	public CWPControlThread(CWPControlService service) {
 		cwpService = service;
+	}
+
+	/** Disconnect from server cleanly and setup to resolve hostname */
+	private void resetServerConnection() {
+		if (connState == CONN_CONNECTED) {
+			/* Should be non-null */
+			if (connChannel != null) {
+				try {
+					connChannel.close();
+				} catch (IOException e) {
+					/* Do we have other option than just ignore this? */
+				}
+			}
+
+			connChannel = null;
+			connSockAddr = null;
+			connStartTime = -1;
+
+			connState = CONN_RESOLVING_ADDRESS;
+		} else if (connState == CONN_CREATE_CONNECTION) {
+			connChannel = null;
+			connSockAddr = null;
+			connStartTime = -1;
+
+			connState = CONN_RESOLVING_ADDRESS;
+		}
 	}
 
 	/** Main loop of thread */
@@ -59,10 +92,13 @@ public class CWPControlThread extends Thread {
 				break;
 
 			case CONN_CREATE_CONNECTION:
-				sleep(Long.MAX_VALUE);
+				handleCreateConnection();
+
 				break;
 
 			case CONN_CONNECTED:
+				sleep(Long.MAX_VALUE);
+
 				break;
 			}
 		} catch (InterruptedException ie) {
@@ -83,7 +119,8 @@ public class CWPControlThread extends Thread {
 	private void handleResolvingAddress() throws InterruptedException {
 		/* Resolve IP-address for hostname */
 		try {
-			currAddr = InetAddress.getByName(hostName);
+			connSockAddr = new InetSocketAddress(
+					InetAddress.getByName(hostName), hostPort);
 
 			/* TODO: notify UI-thread about successful connection */
 
@@ -93,6 +130,58 @@ public class CWPControlThread extends Thread {
 
 			/* Wait some time before retrying resolving address */
 			sleep(5000);
+		}
+	}
+
+	private void handleCreateConnection() throws InterruptedException {
+		connChannel = null;
+
+		try {
+			/* open socket and store connection time */
+			connChannel = SocketChannel.open(connSockAddr);
+			connStartTime = System.currentTimeMillis();
+
+			/* make channel non-blocking */
+			connChannel.configureBlocking(false);
+
+			/* adjust socket for low-latency */
+			connChannel.socket().setTcpNoDelay(true);
+
+			/* in connected state now */
+			connState = CONN_CONNECTED;
+		} catch (SocketException se) {
+			/*
+			 * Caused by socket() or setTcpNoDelay(), should ignore or reset
+			 * connection?
+			 * 
+			 * Choose to ignore, it is not fatal for connection and if some
+			 * problem is causing this to happen, problem will trigger
+			 * IOException later.
+			 */
+
+			/* in connected state now */
+			connState = CONN_CONNECTED;
+		} catch (ClosedByInterruptException cbie) {
+			/*
+			 * Interrupted in SocketChannel.open() blocking I/O. Channel has
+			 * been closed, retry connection on next loop.
+			 */
+			connState = CONN_CREATE_CONNECTION;
+			throw new InterruptedException();
+		} catch (IOException ioe) {
+			/* IO error, need to reset connection */
+			if (connChannel != null) {
+				try {
+					connChannel.close();
+				} catch (IOException e) {
+				}
+			}
+
+			/*
+			 * IOException is hard error, maybe internet connection was lost. Go
+			 * back to resolving address.
+			 */
+			connState = CONN_RESOLVING_ADDRESS;
 		}
 	}
 
@@ -126,6 +215,12 @@ public class CWPControlThread extends Thread {
 
 	private void handleNewConfiguration(String hostName, int hostPort,
 			int morseSpeed) {
+		/* Enforce valid range of port */
+		if (hostPort < 0)
+			hostPort = 0;
+		else if (hostPort > 0xffff)
+			hostPort = 0xffff;
+
 		/* No configuration, fill in values and change connection state */
 		if (connState == CONN_NO_CONFIGURATION) {
 			this.hostName = hostName;
@@ -152,10 +247,8 @@ public class CWPControlThread extends Thread {
 			this.hostName = hostName;
 			this.hostPort = hostPort;
 
-			// if (isConnected)
-			// disconnectFromServer();
-
-			connState = CONN_RESOLVING_ADDRESS;
+			/* restart from resolving server address */
+			resetServerConnection();
 		}
 	}
 
