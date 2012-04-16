@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    
-    <item android:id="@+id/menu_settings" android:title="@string/menu_settings" android:icon="@android:drawable/ic_menu_preferences"></item>
-    <item android:id="@+id/menu_clear_morse" android:title="@string/menu_clear_messages" android:icon="@android:drawable/ic_menu_close_clear_cancel"></item>
-    <item android:id="@+id/menu_send_sos" android:title="@string/menu_send_sos" android:icon="@android:drawable/ic_dialog_alert"></item>
-    
+
+    <item
+        android:id="@+id/menu_settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="@string/menu_settings">
+    </item>
+    <item
+        android:id="@+id/menu_clear_morse"
+        android:icon="@android:drawable/ic_menu_close_clear_cancel"
+        android:title="@string/menu_clear_messages">
+    </item>
+    <item
+        android:id="@+id/menu_send_sos"
+        android:icon="@android:drawable/ic_dialog_alert"
+        android:title="@string/menu_send_sos">
+    </item>
+    <item
+        android:id="@+id/menu_reset_connection"
+        android:icon="@android:drawable/ic_menu_revert"
+        android:title="@string/menu_reset_connection">
+    </item>
 
 </menu>

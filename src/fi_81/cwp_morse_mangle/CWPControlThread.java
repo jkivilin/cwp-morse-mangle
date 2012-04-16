@@ -84,6 +84,8 @@ public class CWPControlThread extends Thread {
 
 	/** Disconnect from server cleanly and setup to resolve hostname */
 	private void resetServerConnection() {
+		Log.d(TAG, "resetServerConnection()");
+		
 		if (connState == CONN_CONNECTED) {
 			/* Should be non-null */
 			if (connChannel != null) {
@@ -117,6 +119,8 @@ public class CWPControlThread extends Thread {
 	/** Main loop of thread */
 	private void run_loop() {
 		try {
+			Log.d(TAG, "run_loop(): " + connState);
+			
 			switch (connState) {
 			default:
 			case CONN_NO_CONFIGURATION:
@@ -198,17 +202,20 @@ public class CWPControlThread extends Thread {
 			/* in connected state now */
 			connState = CONN_CONNECTED;
 		} catch (SocketException se) {
-			/*
-			 * Caused by socket() or setTcpNoDelay(), should ignore or reset
-			 * connection?
-			 * 
-			 * Choose to ignore, it is not fatal for connection and if some
-			 * problem is causing this to happen, problem will trigger
-			 * IOException later.
-			 */
+			/* clean up */
+			if (connChannel != null) {
+				try {
+					connChannel.close();
+				} catch (IOException e) {
+				}
+			}
 
-			/* in connected state now */
-			connState = CONN_CONNECTED;
+			/* Try resolve address first */
+			connState = CONN_RESOLVING_ADDRESS;
+
+			/* Short sleep to avoid busy loop */
+			sleep(200);
+			return;
 		} catch (ClosedByInterruptException cbie) {
 			/*
 			 * Interrupted in SocketChannel.open() blocking I/O. Channel has
@@ -230,6 +237,9 @@ public class CWPControlThread extends Thread {
 			 * back to resolving address.
 			 */
 			connState = CONN_RESOLVING_ADDRESS;
+
+			/* Short sleep to avoid busy loop */
+			sleep(200);
 			return;
 		}
 
@@ -509,7 +519,7 @@ public class CWPControlThread extends Thread {
 						morseMessage.append("¡SOS!");
 						continue;
 					}
-					
+
 					/* Fill end-message control codes with space */
 					if (ch == MorseCharList.SPECIAL_END_OF_CONTACT
 							|| ch == MorseCharList.SPECIAL_END_OF_MESSAGE
@@ -519,7 +529,7 @@ public class CWPControlThread extends Thread {
 					/* Exclude other control codes */
 					if (Character.isUpperCase(ch))
 						continue;
-					
+
 					morseMessage.append(ch);
 				}
 
@@ -652,7 +662,7 @@ public class CWPControlThread extends Thread {
 		/* signal IO-thread of new message */
 		interrupt();
 	}
-	
+
 	private static void queuePush(Vector<CWPThreadValue> msgQueue,
 			CWPThreadValue value) {
 		msgQueue.add(value);

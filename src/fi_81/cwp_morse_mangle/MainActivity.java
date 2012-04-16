@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlBinder;
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlNotification;
+import fi_81.cwp_morse_mangle.morse.MorseCharList;
 import fi_81.cwp_morse_mangle.morse.MorseCodec;
 import android.app.Activity;
 import android.content.ComponentName;
@@ -194,7 +195,13 @@ public class MainActivity extends Activity {
 
 		/* Pass morse message to CWP Service for transfer */
 		if (serviceBound) {
-			cwpService.sendMorseMessage(morseEdit.getText().toString());
+			String message = morseEdit.getText().toString();
+
+			/* Handle SOS specially */
+			if (message.compareTo("SOS") == 0)
+				message = Character.toString(MorseCharList.SPECIAL_SOS);
+
+			cwpService.sendMorseMessage(message);
 		} else {
 			/* should not be here, but lets handle this anyway */
 			sendingMorseMessageComplete();
@@ -277,7 +284,7 @@ public class MainActivity extends Activity {
 		 */
 		morseText = (TextView) findViewById(R.id.text_morse);
 		morseText.setText("");
-		
+
 		/*
 		 * Handle of editing morse message
 		 */
@@ -315,8 +322,7 @@ public class MainActivity extends Activity {
 			public CharSequence filter(CharSequence source, int start, int end,
 					Spanned dest, int dstart, int dend) {
 				for (int i = start; i < end; i++)
-					if (!MorseCodec.isAllowedMorseCharacter(source
-							.charAt(i)))
+					if (!MorseCodec.isAllowedMorseCharacter(source.charAt(i)))
 						return "";
 
 				return null;
@@ -493,7 +499,7 @@ public class MainActivity extends Activity {
 		morseProgress = null;
 		channelEdit = null;
 		morseText = null;
-		
+
 		super.onDestroy();
 	}
 
@@ -512,8 +518,9 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onRestoreInstanceState()");
 
 		currentChannel = savedInstanceState.getLong("current_channel");
-		sendingMorseMessage = savedInstanceState.getBoolean("sending_morse_message");
-		
+		sendingMorseMessage = savedInstanceState
+				.getBoolean("sending_morse_message");
+
 		super.onRestoreInstanceState(savedInstanceState);
 
 	}
@@ -537,11 +544,45 @@ public class MainActivity extends Activity {
 			/* Start settings editor */
 			Intent i = new Intent(this, MainSettingsActivity.class);
 			startActivity(i);
+
 			return true;
+
 		case R.id.menu_clear_morse:
 			/* Clear received messages from CWPService */
 			if (serviceBound)
 				cwpService.clearMorseMessages();
+
+			return true;
+
+		case R.id.menu_send_sos:
+			/* Check if can send SOS now... */
+			if (!sendingMorseMessage) {
+				morseEdit.setText("SOS");
+				sendMorseMessage();
+			} else {
+				Toast.makeText(this, R.string.toast_cannot_send_sos, 2000)
+						.show();
+			}
+
+			return true;
+
+		case R.id.menu_reset_connection:
+			if (serviceBound) {
+				/* load saved settings */
+				SharedPreferences settings = PreferenceManager
+						.getDefaultSharedPreferences(MainActivity.this);
+
+				/* Pass cleared settings to CWP service to close connection */
+				cwpService.setConfiguration("", 12345,
+						DefaultSettings.getMorseSpeedMillisec(settings));
+
+				/* Pass current settings to CWP service restore connection */
+				cwpService.setConfiguration(
+						DefaultSettings.getHostName(settings),
+						DefaultSettings.getHostPortInt(settings),
+						DefaultSettings.getMorseSpeedMillisec(settings));
+			}
+
 			return true;
 		}
 
@@ -572,7 +613,7 @@ public class MainActivity extends Activity {
 				Log.w(TAG, "morseUpdated() callback while service not bound!");
 				return;
 			}
-			
+
 			updateMorseMessages(morse);
 		}
 
