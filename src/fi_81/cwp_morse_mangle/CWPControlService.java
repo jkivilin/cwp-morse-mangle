@@ -2,7 +2,9 @@ package fi_81.cwp_morse_mangle;
 
 import java.util.Arrays;
 
+import fi_81.cwp_morse_mangle.morse.BitString;
 import fi_81.cwp_morse_mangle.morse.MorseCharList;
+import fi_81.cwp_morse_mangle.morse.MorseCodec;
 
 import android.app.Service;
 import android.content.Intent;
@@ -228,8 +230,12 @@ public class CWPControlService extends Service {
 	}
 
 	/** Pushes morse message to CWP server */
-	public void sendMorseMessage(String morse) {
-		ioThread.sendMorseMessage(morse);
+	public void sendMorseMessage(String message) {
+		String morseMessage = MorseCharList.SPECIAL_START_OF_MESSAGE + message
+				+ MorseCharList.SPECIAL_END_OF_CONTACT;
+		BitString morseBits = MorseCodec.encodeMessageToMorse(morseMessage);
+
+		ioThread.sendMorseMessage(morseBits);
 	}
 
 	/** Pushed frequency change to CWP server */

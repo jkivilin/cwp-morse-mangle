@@ -486,6 +486,7 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onSaveInstanceState()");
 
 		outState.putLong("current_channel", currentChannel);
+		outState.putBoolean("sending_morse_message", sendingMorseMessage);
 
 		super.onSaveInstanceState(outState);
 	}
@@ -495,7 +496,8 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "onRestoreInstanceState()");
 
 		currentChannel = savedInstanceState.getLong("current_channel");
-
+		sendingMorseMessage = savedInstanceState.getBoolean("sending_morse_message");
+		
 		super.onRestoreInstanceState(savedInstanceState);
 
 	}

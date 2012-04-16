@@ -54,6 +54,7 @@ public class CWPControlThread extends Thread {
 	private SocketChannel connChannel;
 	private CWInput cwpIn;
 	private CWOutput cwpOut;
+	private boolean busySendingMorseMessage = false;
 
 	/* Send and receive channel states */
 	private boolean recvStateUp = false;
@@ -105,6 +106,7 @@ public class CWPControlThread extends Thread {
 		recvStateUp = false;
 		sendStateUp = false;
 		currFrequency = 1;
+		busySendingMorseMessage = false;
 	}
 
 	/** Main loop of thread */
@@ -274,8 +276,17 @@ public class CWPControlThread extends Thread {
 					: timeToNextOutWork);
 
 		/* Receive and send data */
-		if (numReadyChannels > 0)
+		if (numReadyChannels > 0) {
 			handleNonBlockingNetworkIO();
+
+			if (busySendingMorseMessage && cwpOut.queueSize() == 0
+					&& cwpOut.getOutputBuffer().remaining() == 0) {
+				/* Sending morse message completed */
+				busySendingMorseMessage = false;
+
+				cwpService.notifyMorseMessageComplete();
+			}
+		}
 
 		/* CWP input handling */
 		cwpIn.processInput(inputNotify);
@@ -348,8 +359,21 @@ public class CWPControlThread extends Thread {
 		 */
 	}
 
-	private void handleNewMorseMessage(String morseMessage) {
-		/* TODO: add functionality */
+	private void handleNewMorseMessage(BitString morseMessage) {
+		if (connState == CONN_CONNECTED && cwpOut != null) {
+			/* Caller should make sure this does not happen */
+			if (busySendingMorseMessage)
+				return;
+
+			busySendingMorseMessage = true;
+
+			/* Fill in morse message */
+			cwpOut.sendDown();
+			cwpOut.sendMorseCode(morseMessage);
+		} else {
+			/* Just complete morse message sending when not connected */
+			cwpService.notifyMorseMessageComplete();
+		}
 	}
 
 	private void handleNewFrequency(long frequency) {
@@ -364,6 +388,9 @@ public class CWPControlThread extends Thread {
 	}
 
 	private void handleNewSendingState(boolean stateUp) {
+		if (busySendingMorseMessage)
+			return;
+
 		if (connState == CONN_CONNECTED && cwpOut != null) {
 			Log.d(TAG, "handleNewSendingState: " + stateUp);
 
@@ -540,9 +567,9 @@ public class CWPControlThread extends Thread {
 	}
 
 	/** Set to send morse message */
-	public void sendMorseMessage(String morse) {
+	public void sendMorseMessage(BitString morseBits) {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(morse));
+		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(morseBits));
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -582,14 +609,14 @@ public class CWPControlThread extends Thread {
 		protected int type;
 		protected long argLong0;
 		protected int argInt0;
-		protected String argString0;
+		protected Object argObj0;
 
 		protected static CWPThreadValue buildConfiguration(String hostName,
 				int hostPort, int morseSpeed) {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_CONFIGURATION;
-			value.argString0 = hostName;
+			value.argObj0 = hostName;
 			value.argLong0 = hostPort;
 			value.argInt0 = morseSpeed;
 
@@ -600,7 +627,7 @@ public class CWPControlThread extends Thread {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_STATE_CHANGE;
-			value.argString0 = null;
+			value.argObj0 = null;
 			value.argLong0 = isStateUp ? 1 : 0;
 			value.argInt0 = 0;
 
@@ -611,18 +638,18 @@ public class CWPControlThread extends Thread {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_FREQ_CHANGE;
-			value.argString0 = null;
+			value.argObj0 = null;
 			value.argLong0 = freq;
 			value.argInt0 = 0;
 
 			return value;
 		}
 
-		protected static CWPThreadValue buildMorseMessage(String message) {
+		protected static CWPThreadValue buildMorseMessage(BitString morseBits) {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_MORSE_MESSAGE;
-			value.argString0 = message;
+			value.argObj0 = morseBits;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
 
@@ -633,7 +660,7 @@ public class CWPControlThread extends Thread {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_STATE_REQUEST;
-			value.argString0 = null;
+			value.argObj0 = null;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
 
@@ -644,7 +671,7 @@ public class CWPControlThread extends Thread {
 		 * Values for TYPE_CONFIGURATION
 		 */
 		protected String getHostName() {
-			return argString0;
+			return (String) argObj0;
 		}
 
 		protected int getHostPort() {
@@ -672,8 +699,8 @@ public class CWPControlThread extends Thread {
 		/*
 		 * Values for TYPE_MORSE_MESSAGE
 		 */
-		protected String getMorseMessage() {
-			return argString0;
+		protected BitString getMorseMessage() {
+			return (BitString) argObj0;
 		}
 	}
 }

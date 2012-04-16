@@ -229,4 +229,10 @@ public class CWOutput {
 
 		return addedToBuffer;
 	}
+
+	public int queueSize() {
+		if (queue != null)
+			return queue.size();
+		return 0;
+	}
 }
