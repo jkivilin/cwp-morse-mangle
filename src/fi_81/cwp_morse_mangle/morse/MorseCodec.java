@@ -10,6 +10,11 @@ public class MorseCodec {
 			.characterToMorseString(MorseCharList.SPECIAL_STOP_MESSAGE);
 	public static final BitString endSequence = charStop.append(endMessage);
 
+	/* Or by end-of-contact from sender */
+	public static final BitString endContact = charStop.append(MorseCharList
+			.characterToMorseString(MorseCharList.SPECIAL_END_OF_CONTACT)
+			.append(charStop));
+
 	/* Message string to morse code */
 	public static BitString encodeMessageToMorse(String message) {
 		BitString output = new BitString();

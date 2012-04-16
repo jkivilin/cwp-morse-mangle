@@ -158,33 +158,50 @@ public class CWPPackageTests extends TestCase {
 		return bb.array()[3];
 	}
 
+	private static final byte test_array0[] = {
+	/* state-change: state-up, timestamp = 1 */
+	b(0x00), b(0x00), b(0x00), b(0x01),
+	/* state-change: state-down, duration = 0x1f */
+	b(0x00), b(0x1f),
+	/* state-change: state-up, timestamp = 0x7f8f9faf */
+	b(0x7f), b(0x8f), b(0x9f), b(0xaf),
+	/* state-change: state-down, duration = 0xfffe */
+	b(0xff), b(0xfe) };
+
+	private static final byte test_array1[] = {
+	/* freq-change, freq = 1 (-1 = 0xffffffff) */
+	b(0xff), b(0xff), b(0xff), b(0xff),
+	/* state-change: state-up, timestamp = 1 */
+	b(0x00), b(0x00), b(0x00), b(0x01),
+	/* state-change: state-down, duration = 0x1f */
+	b(0x00), b(0x1f),
+	/* freq-change, freq = 2 (-1 = 0xfffffffe) */
+	b(0xff), b(0xff), b(0xff), b(0xfe),
+	/* state-change: state-up, timestamp = 0x7f8f9faf */
+	b(0x7f), b(0x8f), b(0x9f), b(0xaf),
+	/* state-change: state-down, duration = 0xfffe */
+	b(0xff), b(0xfe) };
+
+	private static final byte test_array2[] = {
+	/* state-change: state-up, timestamp = 0 */
+	b(0x00), b(0x00), b(0x00), b(0x00),
+	/* state-change: state-down, duration = 0x1f */
+	b(0x00), b(0x1f) };
+
+	private static final byte test_array3[] = {
+	/* state-change: state-up, timestamp = 0x0 */
+	b(0x00), b(0x00), b(0x00), b(0x00),
+	/* state-change: state-down, duration = 0x0f */
+	b(0x00), b(0x0f),
+	/* state-change: state-up, timestamp = 0x0f */
+	b(0x00), b(0x00), b(0x00), b(0x0f),
+	/* state-change: state-down, duration = 0x01 */
+	b(0x00), b(0x01) };
+
 	@Test
 	public void test3_CWInput() {
 		final LinkedList<Long> freqs = new LinkedList<Long>();
-		final byte test_array0[] = {
-				b(0x00), b(0x00), b(0x00), b(0x01), /* state-change: state-up, timestamp = 1 */
-				b(0x00), b(0x1f),					/* state-change: state-down, duration = 0x1f */
-				b(0x7f), b(0x8f), b(0x9f), b(0xaf), /* state-change: state-up, timestamp = 0x7f8f9faf */
-				b(0xff), b(0xfe),					/* state-change: state-down, duration = 0xfffe */
-			};
-		final byte test_array1[] = {
-				b(0xff), b(0xff), b(0xff), b(0xff),	/* freq-change, freq = 1 (-1 = 0xffffffff) */
-				b(0x00), b(0x00), b(0x00), b(0x01), /* state-change: state-up, timestamp = 1 */
-				b(0x00), b(0x1f),					/* state-change: state-down, duration = 0x1f */
-				b(0xff), b(0xff), b(0xff), b(0xfe),	/* freq-change, freq = 2 (-1 = 0xfffffffe) */
-				b(0x7f), b(0x8f), b(0x9f), b(0xaf), /* state-change: state-up, timestamp = 0x7f8f9faf */
-				b(0xff), b(0xfe),					/* state-change: state-down, duration = 0xfffe */
-			};
-		final byte test_array2[] = {
-				b(0x00), b(0x00), b(0x00), b(0x00), /* state-change: state-up, timestamp = 0 */
-				b(0x00), b(0x1f),					/* state-change: state-down, duration = 0x1f */
-		};
-		final byte test_array3[] = {
-				b(0x00), b(0x00), b(0x00), b(0x00), /* state-change: state-up, timestamp = 0x0 */
-				b(0x00), b(0x0f),					/* state-change: state-down, duration = 0x0f */
-				b(0x00), b(0x00), b(0x00), b(0x0f), /* state-change: state-up, timestamp = 0x0f */
-				b(0x00), b(0x01),					/* state-change: state-down, duration = 0x01 */
-		};
+
 		CWInput cwi;
 		CWInputQueue cwiq;
 
@@ -395,8 +412,9 @@ public class CWPPackageTests extends TestCase {
 
 					@Override
 					public void morseMessage(BitString morseBits) {
-						Log.d(TAG, morseBits.toString());
-						Log.d(TAG, MorseCodec.decodeMorseToMessage(morseBits));
+						System.out.println(morseBits);
+						System.out.println(MorseCodec
+								.decodeMorseToMessage(morseBits));
 						morseCode.set(0, morseCode.get(0).append(morseBits));
 
 						if (morseCode.get(0).endWith(MorseCodec.endSequence))
@@ -414,8 +432,11 @@ public class CWPPackageTests extends TestCase {
 		}
 
 		String messageSent = "";
-		for (int i = 0, len = messagesToSend.length; i < len; i++)
+		String messageSentSeparate = "";
+		for (int i = 0, len = messagesToSend.length; i < len; i++) {
 			messageSent = messageSent + messagesToSend[i];
+			messageSentSeparate = messageSentSeparate + " " + messagesToSend[i];
+		}
 
 		String messageReceived = MorseCodec.decodeMorseToMessage(morseCode
 				.get(0));
@@ -433,6 +454,19 @@ public class CWPPackageTests extends TestCase {
 				.trim();
 		messageSent = messageSent.replaceAll(Matcher.quoteReplacement("  "),
 				" ").trim();
+		messageSentSeparate = messageSentSeparate.replaceAll(
+				Matcher.quoteReplacement("©"), "").trim();
+		messageSentSeparate = messageSentSeparate.replaceAll(
+				Matcher.quoteReplacement("  "), " ").trim();
+
+		if (messageSent.compareTo(messageReceived) == 0)
+			return;
+
+		if (messageSentSeparate.compareTo(messageReceived) == 0)
+			return;
+
+		Log.d(TAG, String.format("send[%s][%s], recv[%s]", messageSent,
+				messageSentSeparate, messageReceived));
 		assertEquals(messageSent, messageReceived);
 	}
 
@@ -462,7 +496,7 @@ public class CWPPackageTests extends TestCase {
 	@Test
 	public void test5_CWOutputToCWInput() {
 		/* test variating signal widths */
-		CWStateChangeQueueFromMorseCode.setSignalJitter(10, 0.15);
+		CWStateChangeQueueFromMorseCode.setSignalJitter(100, 0.01);
 		privateTestCWMorse("abc", 11, "cba", 22);
 
 		for (int i = 1; i < 3; i++) {
