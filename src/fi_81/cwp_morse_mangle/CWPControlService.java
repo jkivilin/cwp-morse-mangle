@@ -45,8 +45,7 @@ public class CWPControlService extends Service {
 	private final IBinder binder = new CWPControlBinder();
 
 	/* Threading */
-	private Thread ioThread;
-	private boolean ioThreadStop = false;
+	private CWPControlThread ioThread;
 
 	/* Configuration */
 	private String hostName = "";
@@ -99,40 +98,19 @@ public class CWPControlService extends Service {
 	public void onCreate() {
 		Log.d(TAG, "onCreate()");
 
-		/* Simulate receiving of messages from IO thread */
-		ioThread = new Thread(new Runnable() {
-			public void run() {
-				while (!ioThreadStop) {
-					boolean up, sendingComplete = false;
-
-					synchronized (CWPControlService.this) {
-						recvStateUp = !recvStateUp;
-						up = recvStateUp;
-
-						if (sendingMorseCount > 0)
-							if (--sendingMorseCount == 0)
-								sendingComplete = true;
-					}
-
-					notifyStateChange();
-
-					if (sendingComplete)
-						notifyMorseMessageComplete();
-
-					try {
-						if (up)
-							Thread.sleep(100);
-						else
-							Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						return;
-					}
-				}
-			}
-		});
-
+		/* Start IO-thread */
+		ioThread = new CWPControlThread(this);
 		ioThread.start();
 
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		ioThread.endWorkAndJoin();
+		
 		super.onCreate();
 	}
 
@@ -164,15 +142,7 @@ public class CWPControlService extends Service {
 	public void onDestroy() {
 		Log.d(TAG, "onDestroy()");
 
-		ioThreadStop = true;
-		ioThread.interrupt();
-		try {
-			ioThread.join();
-		} catch (InterruptedException e) {
-			/* do nothing */
-			Log.e(TAG,
-					"onDestroy(): joining ioThread failed with " + e.toString());
-		}
+		ioThread.endWorkAndJoin();
 
 		super.onDestroy();
 	}
@@ -216,6 +186,7 @@ public class CWPControlService extends Service {
 		int state = CWPControlNotification.STATE_DOWN;
 		Handler handler;
 
+		/* In IO-thread context */
 		synchronized (this) {
 			if (recvStateUp && sendStateUp)
 				state = CWPControlNotification.STATE_DOUBLE_UP;
@@ -245,6 +216,7 @@ public class CWPControlService extends Service {
 		Handler handler;
 		String morse;
 
+		/* In IO-thread context */
 		synchronized (this) {
 			handler = notifyHandler;
 			morse = getMorseMessage();
@@ -269,6 +241,7 @@ public class CWPControlService extends Service {
 	private void notifyMorseMessageComplete() {
 		Handler handler;
 
+		/* In IO-thread context */
 		synchronized (this) {
 			handler = notifyHandler;
 		}
@@ -291,6 +264,7 @@ public class CWPControlService extends Service {
 		Handler handler;
 		long freq;
 
+		/* In IO-thread context */
 		synchronized (this) {
 			handler = notifyHandler;
 			freq = frequency;
