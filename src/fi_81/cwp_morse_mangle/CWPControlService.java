@@ -47,11 +47,6 @@ public class CWPControlService extends Service {
 	/* Threading */
 	private CWPControlThread ioThread;
 
-	/* Configuration */
-	private String hostName = "";
-	private int hostPort = 0;
-	private int morseSpeed = 0;
-
 	/* Callbacks to MainActivity */
 	private CWPControlNotification notify = null;
 	private Handler notifyHandler = null;
@@ -64,15 +59,7 @@ public class CWPControlService extends Service {
 	/* Received morse string */
 	private String morseMessage = "";
 
-	/* Sending morse state */
-	private int sendingMorseCount = 0;
-
-	/* Thread-safe setter & getter for morseMessage */
-	private synchronized void setMorseMessage(String morse) {
-		morseMessage = morse;
-	}
-
-	private synchronized String getMorseMessage() {
+	private String getMorseMessage() {
 		return morseMessage;
 	}
 
@@ -102,15 +89,6 @@ public class CWPControlService extends Service {
 		ioThread = new CWPControlThread(this);
 		ioThread.start();
 
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		ioThread.endWorkAndJoin();
-		
 		super.onCreate();
 	}
 
@@ -148,18 +126,8 @@ public class CWPControlService extends Service {
 	}
 
 	/** New configuration for CWP service */
-	public synchronized void setConfiguration(String hostName, int hostPort,
-			int morseSpeed) {
-		if (hostName.compareTo(this.hostName) != 0 || hostPort != this.hostPort) {
-			/* Server has changed. Need to reset connection. */
-		}
-
-		if (morseSpeed != this.morseSpeed) {
-			/*
-			 * Morse speed changed. Handling is easy as speed is stored as
-			 * global/static variable.
-			 */
-		}
+	public void setConfiguration(String hostName, int hostPort, int morseSpeed) {
+		ioThread.setNewConfiguration(hostName, hostPort, morseSpeed);
 	}
 
 	/** Registers notification callbacks */
@@ -302,12 +270,11 @@ public class CWPControlService extends Service {
 	}
 
 	/** Pushes morse message to CWP server */
-	public synchronized void sendMorseMessage(String morse) {
-		sendingMorseCount = morse.length();
+	public void sendMorseMessage(String morse) {
 	}
 
 	/** Pushed frequency change to CWP server */
-	public synchronized void setFrequency(long freq) {
+	public void setFrequency(long freq) {
 		if (freq == frequency)
 			return;
 
