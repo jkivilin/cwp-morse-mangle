@@ -243,8 +243,13 @@ public class CWPControlService extends Service {
 		ioThread.setFrequency(freq);
 	}
 
+	/** Clear received morse messages */
+	public void clearMorseMessages() {
+		ioThread.requestClearMessages();
+	}
+	
 	/** Checks if character is allowed for morse message */
-	public static boolean isAllowedMorseCharacter(char ch) {
+	public static boolean isAllowedMorseCharacter(char ch) {		
 		char array[] = MorseCharList.getAllowedCharacters();
 
 		return Arrays.binarySearch(array, ch) >= 0;

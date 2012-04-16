@@ -19,6 +19,8 @@ import fi_81.cwp_morse_mangle.cwp.*;
 import fi_81.cwp_morse_mangle.cwp.CWInput.CWInputNotification;
 import fi_81.cwp_morse_mangle.cwp.CWOutput.CWOutputNotification;
 import fi_81.cwp_morse_mangle.morse.BitString;
+import fi_81.cwp_morse_mangle.morse.MorseCharList;
+import fi_81.cwp_morse_mangle.morse.MorseCodec;
 
 import android.util.Log;
 
@@ -60,6 +62,8 @@ public class CWPControlThread extends Thread {
 	private boolean recvStateUp = false;
 	private boolean sendStateUp = false;
 	private long currFrequency = 1;
+	private BitString morseMessageBits;
+	private final StringBuffer morseMessage = new StringBuffer();
 
 	/* Parent service */
 	private CWPControlService cwpService;
@@ -107,6 +111,7 @@ public class CWPControlThread extends Thread {
 		sendStateUp = false;
 		currFrequency = 1;
 		busySendingMorseMessage = false;
+		morseMessageBits = null;
 	}
 
 	/** Main loop of thread */
@@ -348,6 +353,10 @@ public class CWPControlThread extends Thread {
 			case CWPThreadValue.TYPE_STATE_REQUEST:
 				cwpService.notifyFrequencyChange(currFrequency);
 				cwpService.notifyStateChange(recvStateUp, sendStateUp);
+				cwpService.notifyMorseUpdates(morseMessage.toString());
+				break;
+			case CWPThreadValue.TYPE_CLEAR_MESSAGES:
+				morseMessage.setLength(0);
 				cwpService.notifyMorseUpdates("");
 				break;
 			}
@@ -467,7 +476,58 @@ public class CWPControlThread extends Thread {
 		}
 
 		public void morseMessage(BitString morseBits) {
-			Log.d(TAG, String.format("morse-message: %s", morseBits.toString()));
+			Log.d(TAG,
+					String.format("morse-message: %s [%s]",
+							morseBits.toString(),
+							MorseCodec.decodeMorseToMessage(morseBits)));
+
+			/* Gather all message bits */
+			if (morseMessageBits != null)
+				morseMessageBits = morseMessageBits.append(morseBits);
+			else
+				morseMessageBits = morseBits;
+
+			/*
+			 * Message is ended either with endSequence (our internal
+			 * implementation specific code) or by endContact (by sender)
+			 */
+			if (morseMessageBits.endWith(MorseCodec.endSequence)
+					|| morseMessageBits.endWith(MorseCodec.endContact)) {
+				morseMessageBits = morseMessageBits.append(BitString
+						.newZeros(3));
+
+				String message = MorseCodec
+						.decodeMorseToMessage(morseMessageBits);
+
+				Log.d(TAG, "Received morse-message: '" + message + "'");
+
+				/* Fill to main message buffer */
+				morseMessage.append(' ');
+				for (char ch : message.toCharArray()) {
+					/* Handle SOS specially */
+					if (ch == MorseCharList.SPECIAL_SOS) {
+						morseMessage.append("¡SOS!");
+						continue;
+					}
+					
+					/* Fill end-message control codes with space */
+					if (ch == MorseCharList.SPECIAL_END_OF_CONTACT
+							|| ch == MorseCharList.SPECIAL_END_OF_MESSAGE
+							|| ch == MorseCharList.SPECIAL_STOP_MESSAGE)
+						ch = ' ';
+
+					/* Exclude other control codes */
+					if (Character.isUpperCase(ch))
+						continue;
+					
+					morseMessage.append(ch);
+				}
+
+				/* Send updated morse-message string to UI */
+				cwpService.notifyMorseUpdates(morseMessage.toString());
+
+				morseMessageBits = null;
+			}
 		}
 	};
 
@@ -584,6 +644,15 @@ public class CWPControlThread extends Thread {
 		interrupt();
 	}
 
+	/** Request to clear received morse messages */
+	public void requestClearMessages() {
+		/* Push new frequency to IO-thread */
+		queuePush(msgQueue, CWPThreadValue.buildClearMessages());
+
+		/* signal IO-thread of new message */
+		interrupt();
+	}
+	
 	private static void queuePush(Vector<CWPThreadValue> msgQueue,
 			CWPThreadValue value) {
 		msgQueue.add(value);
@@ -605,6 +674,7 @@ public class CWPControlThread extends Thread {
 		protected static final int TYPE_FREQ_CHANGE = 2;
 		protected static final int TYPE_MORSE_MESSAGE = 3;
 		protected static final int TYPE_STATE_REQUEST = 4;
+		protected static final int TYPE_CLEAR_MESSAGES = 5;
 
 		protected int type;
 		protected long argLong0;
@@ -660,6 +730,17 @@ public class CWPControlThread extends Thread {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_STATE_REQUEST;
+			value.argObj0 = null;
+			value.argLong0 = 0;
+			value.argInt0 = 0;
+
+			return value;
+		}
+
+		protected static CWPThreadValue buildClearMessages() {
+			CWPThreadValue value = new CWPThreadValue();
+
+			value.type = TYPE_CLEAR_MESSAGES;
 			value.argObj0 = null;
 			value.argLong0 = 0;
 			value.argInt0 = 0;

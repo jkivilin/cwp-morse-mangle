@@ -51,6 +51,9 @@ public class MainActivity extends Activity {
 	private ProgressBar morseProgress;
 	private boolean sendingMorseMessage = false;
 
+	/* Morse output */
+	private TextView morseText;
+
 	/* Channel input */
 	private EditText channelEdit;
 	private long currentChannel = 1;
@@ -197,6 +200,11 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	/** Called when received morse message to server */
+	private void updateMorseMessages(String morse) {
+		morseText.setText(morse);
+	}
+
 	/** Called when CWP service changes frequency */
 	private void receivedNewChannelSetting(long freq) {
 		Log.d(TAG, String.format(
@@ -263,6 +271,12 @@ public class MainActivity extends Activity {
 			}
 		});
 
+		/*
+		 * Handle showing morse messages
+		 */
+		morseText = (TextView) findViewById(R.id.text_morse);
+		morseText.setText("");
+		
 		/*
 		 * Handle of editing morse message
 		 */
@@ -477,7 +491,8 @@ public class MainActivity extends Activity {
 		morseButton = null;
 		morseProgress = null;
 		channelEdit = null;
-
+		morseText = null;
+		
 		super.onDestroy();
 	}
 
@@ -515,11 +530,17 @@ public class MainActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		Log.d(TAG, "onOptionsItemSelected()");
 
-		// Handle item selection
+		/* Handle item selection */
 		switch (item.getItemId()) {
 		case R.id.menu_settings:
+			/* Start settings editor */
 			Intent i = new Intent(this, MainSettingsActivity.class);
 			startActivity(i);
+			return true;
+		case R.id.menu_clear_morse:
+			/* Clear received messages from CWPService */
+			if (serviceBound)
+				cwpService.clearMorseMessages();
 			return true;
 		}
 
@@ -550,6 +571,8 @@ public class MainActivity extends Activity {
 				Log.w(TAG, "morseUpdated() callback while service not bound!");
 				return;
 			}
+			
+			updateMorseMessages(morse);
 		}
 
 		@Override
