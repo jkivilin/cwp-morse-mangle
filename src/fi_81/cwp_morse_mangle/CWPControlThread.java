@@ -335,7 +335,8 @@ public class CWPControlThread extends Thread {
 			if (key.isValid() && key.isWritable()) {
 				bytesCopied = connChannel.write(cwpOut.getOutputBuffer());
 
-				EventLog.d(TAG, "handleNonBlockingNetworkIO(): written %d bytes",
+				EventLog.d(TAG,
+						"handleNonBlockingNetworkIO(): written %d bytes",
 						bytesCopied);
 
 				/* Output buffer emptied, stop writing */
@@ -385,7 +386,8 @@ public class CWPControlThread extends Thread {
 		cwpService.notifyFrequencyChange(currFrequency);
 		cwpService.notifyStateChange(recvStateUp, sendStateUp);
 		cwpService.notifyMorseUpdates(recvMorseMessage.toString());
-		cwpService.notifyMorseMessageSendingState(!busySendingMorseMessage, sendMorseMessageString);
+		cwpService.notifyMorseMessageSendingState(!busySendingMorseMessage,
+				sendMorseMessageString);
 	}
 
 	private void handleNewMorseMessage(String morse) {
@@ -403,14 +405,16 @@ public class CWPControlThread extends Thread {
 			sendMorseMessage.append(morse);
 			sendMorseMessage.append(MorseCharList.SPECIAL_END_OF_CONTACT);
 
-			BitString morseBits = MorseCodec.encodeMessageToMorse(sendMorseMessage);
+			BitString morseBits = MorseCodec
+					.encodeMessageToMorse(sendMorseMessage);
 
 			/* Fill in morse message */
 			cwpOut.sendDown();
 			cwpOut.sendMorseCode(morseBits);
 
 			/* Report state to activity */
-			cwpService.notifyMorseMessageSendingState(false, sendMorseMessageString);
+			cwpService.notifyMorseMessageSendingState(false,
+					sendMorseMessageString);
 		} else {
 			/* Just complete morse message sending when not connected */
 			sendMorseMessageString = null;
@@ -497,7 +501,8 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			EventLog.d(TAG, "state-change, state: %d, value: %d", newState, value);
+			EventLog.d(TAG, "state-change, state: %d, value: %d", newState,
+					value);
 
 			/* Report state change */
 			if (recvStateUp != isUpState) {
@@ -574,7 +579,8 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			EventLog.d(TAG, "state-change, state: %d, value: %d", newState, value);
+			EventLog.d(TAG, "state-change, state: %d, value: %d", newState,
+					value);
 
 			/* Report state change */
 			if (sendStateUp != isUpState) {

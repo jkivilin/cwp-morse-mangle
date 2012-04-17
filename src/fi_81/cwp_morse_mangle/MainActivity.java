@@ -173,14 +173,17 @@ public class MainActivity extends Activity {
 		sendingMorseMessage = false;
 	}
 
-	/** Called when sending morse message state is set on 
-	 * @param messageBeingSend */
+	/**
+	 * Called when sending morse message state is set on
+	 * 
+	 * @param messageBeingSend
+	 */
 	private void sendingMorseMessageBusy(String messageBeingSend) {
 		if (sendingMorseMessage)
 			return;
 
 		sendingMorseMessage = true;
-		
+
 		/* set message text */
 		if (messageBeingSend != null)
 			morseEdit.setText(messageBeingSend);
@@ -228,8 +231,9 @@ public class MainActivity extends Activity {
 
 	/** Called when CWP service changes frequency */
 	private void receivedNewChannelSetting(long freq) {
-		EventLog.d(TAG, "receivedNewChannelSetting(new-freq: %d, old-freq: %d)",
-				freq, currentChannel);
+		EventLog.d(TAG,
+				"receivedNewChannelSetting(new-freq: %d, old-freq: %d)", freq,
+				currentChannel);
 
 		/* Tell user about new frequency */
 		if (currentChannel != freq) {
@@ -254,7 +258,7 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.main);
-		
+
 		/*
 		 * Handle touching of lamp
 		 */
@@ -347,7 +351,7 @@ public class MainActivity extends Activity {
 		 */
 		channelEdit = (EditText) findViewById(R.id.edit_channel);
 		channelEdit.setEnabled(false);
-		
+
 		if (savedInstanceState != null)
 			currentChannel = savedInstanceState.getLong("current_channel");
 		channelEdit.setText(Long.toString(currentChannel));
@@ -614,7 +618,8 @@ public class MainActivity extends Activity {
 			EventLog.d(TAG, "stateChange(%d)", state);
 
 			if (!serviceBound) {
-				EventLog.w(TAG, "stateChange() callback while service not bound!");
+				EventLog.w(TAG,
+						"stateChange() callback while service not bound!");
 				return;
 			}
 
@@ -626,7 +631,8 @@ public class MainActivity extends Activity {
 			EventLog.d(TAG, "morseUpdated(%s)", morse);
 
 			if (!serviceBound) {
-				EventLog.w(TAG, "morseUpdated() callback while service not bound!");
+				EventLog.w(TAG,
+						"morseUpdated() callback while service not bound!");
 				return;
 			}
 
@@ -634,7 +640,8 @@ public class MainActivity extends Activity {
 		}
 
 		@Override
-		public void morseMessageSendingState(boolean isComplete, String messageBeingSend) {
+		public void morseMessageSendingState(boolean isComplete,
+				String messageBeingSend) {
 			EventLog.d(TAG, "morseMessageSendingState()");
 
 			if (!serviceBound) {

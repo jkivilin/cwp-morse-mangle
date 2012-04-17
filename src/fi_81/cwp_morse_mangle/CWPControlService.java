@@ -31,7 +31,8 @@ public class CWPControlService extends Service {
 		/**
 		 * Called when CWPService morse message sending state changes.
 		 */
-		abstract public void morseMessageSendingState(boolean isSending, String messageBeingSend);
+		abstract public void morseMessageSendingState(boolean isSending,
+				String messageBeingSend);
 
 		/**
 		 * Called when CWPService received frequency change message.

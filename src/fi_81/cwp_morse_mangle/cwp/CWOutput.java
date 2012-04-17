@@ -123,11 +123,11 @@ public class CWOutput {
 	public boolean sendFrequenceChange(long newFreq) {
 		if (newFreq < 1 || -newFreq < Integer.MIN_VALUE)
 			return true;
-		
+
 		/* Current send state is at 'down' always except when inManualUp. */
 		if (inManualUp) {
 			delayedFreq = newFreq;
-			
+
 			return true;
 		}
 
@@ -163,7 +163,7 @@ public class CWOutput {
 
 			inManualUp = false;
 			sendFrequenceChange(delayedFreq);
-			
+
 			return true;
 		}
 

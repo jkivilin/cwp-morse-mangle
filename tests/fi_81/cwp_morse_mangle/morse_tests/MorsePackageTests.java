@@ -21,7 +21,7 @@ public class MorsePackageTests extends TestCase {
 		CharBuffer cb = CharBuffer.allocate(5);
 		cb.put("11101");
 		cb.flip();
-		
+
 		MorseChar mc0 = new MorseChar(new BitString("111"), 't');
 		MorseChar mc1 = new MorseChar(new BitString("1"), 'e');
 		MorseChar mc2 = new MorseChar(new BitString("101"), 'i');
