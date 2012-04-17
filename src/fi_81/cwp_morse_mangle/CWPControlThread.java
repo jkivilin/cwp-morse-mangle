@@ -117,6 +117,12 @@ public class CWPControlThread extends Thread {
 			connState = CONN_RESOLVING_ADDRESS;
 		}
 
+		/* TODO: force/clear flush morse queue at freq change (in CWInput) */
+
+		/* Clear pending morse message */
+		handleReceivedMorseMessageBuffer();
+
+		/* Clear connection state */
 		recvStateUp = false;
 		sendStateUp = false;
 		currFrequency = 1;
@@ -490,7 +496,48 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
-	/** Combined handling of */
+	/** Decode received morse bits to message string and pass to UI-thread */
+	private void handleReceivedMorseMessageBuffer() {
+		/* Nothing to process? */
+		if (morseMessageBits.length() == 0)
+			return;
+
+		morseMessageBits = morseMessageBits.append(BitString.newZeros(3));
+		String message = MorseCodec.decodeMorseToMessage(morseMessageBits);
+
+		/* No message? */
+		if (message == null || message.length() == 0)
+			return;
+
+		EventLog.d(TAG, "Received morse-message: '%s'", message);
+
+		/* Fill to main message buffer */
+		recvMorseMessage.append(' ');
+		for (char ch : message.toCharArray()) {
+			/* Handle SOS specially */
+			if (ch == MorseCharList.SPECIAL_SOS) {
+				recvMorseMessage.append("¡SOS!");
+				continue;
+			}
+
+			/* Fill end-message control codes with space */
+			if (ch == MorseCharList.SPECIAL_END_OF_CONTACT
+					|| ch == MorseCharList.SPECIAL_END_OF_MESSAGE
+					|| ch == MorseCharList.SPECIAL_STOP_MESSAGE)
+				ch = ' ';
+
+			/* Exclude other control codes */
+			if (Character.isUpperCase(ch))
+				continue;
+
+			recvMorseMessage.append(ch);
+		}
+
+		/* Send updated morse-message string to UI */
+		cwpService.notifyMorseUpdates(recvMorseMessage.toString());
+
+		morseMessageBits = null;
+	}
 
 	/** Handle callbacks from CWInput */
 	private final CWInputNotification inputNotify = new CWInputNotification() {
@@ -498,6 +545,11 @@ public class CWPControlThread extends Thread {
 
 		public void frequencyChange(long newFreq) {
 			EventLog.d(TAG, "freq-change: %d", newFreq);
+
+			/* TODO: force/clear flush morse queue at freq change (in CWInput) */
+
+			/* Clear pending morse message */
+			handleReceivedMorseMessageBuffer();
 
 			cwpService.notifyFrequencyChange(newFreq);
 		}
@@ -532,40 +584,7 @@ public class CWPControlThread extends Thread {
 			 */
 			if (morseMessageBits.endWith(MorseCodec.endSequence)
 					|| morseMessageBits.endWith(MorseCodec.endContact)) {
-				morseMessageBits = morseMessageBits.append(BitString
-						.newZeros(3));
-
-				String message = MorseCodec
-						.decodeMorseToMessage(morseMessageBits);
-
-				EventLog.d(TAG, "Received morse-message: '%s'", message);
-
-				/* Fill to main message buffer */
-				recvMorseMessage.append(' ');
-				for (char ch : message.toCharArray()) {
-					/* Handle SOS specially */
-					if (ch == MorseCharList.SPECIAL_SOS) {
-						recvMorseMessage.append("¡SOS!");
-						continue;
-					}
-
-					/* Fill end-message control codes with space */
-					if (ch == MorseCharList.SPECIAL_END_OF_CONTACT
-							|| ch == MorseCharList.SPECIAL_END_OF_MESSAGE
-							|| ch == MorseCharList.SPECIAL_STOP_MESSAGE)
-						ch = ' ';
-
-					/* Exclude other control codes */
-					if (Character.isUpperCase(ch))
-						continue;
-
-					recvMorseMessage.append(ch);
-				}
-
-				/* Send updated morse-message string to UI */
-				cwpService.notifyMorseUpdates(recvMorseMessage.toString());
-
-				morseMessageBits = null;
+				handleReceivedMorseMessageBuffer();
 			}
 		}
 	};
