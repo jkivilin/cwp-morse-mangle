@@ -3,7 +3,7 @@ package fi_81.cwp_morse_mangle;
 import android.util.Log;
 
 /* Log wrapper with on/off switch and formatting input */
-public class LogF {
+public class EventLog {
 	private static final boolean logging = true;
 
 	private static String getFormattedString(String fmt, Object... args) {

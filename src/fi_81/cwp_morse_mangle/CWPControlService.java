@@ -55,7 +55,7 @@ public class CWPControlService extends Service {
 		private static final String TAG = "CWPControlBinder";
 
 		public CWPControlService getService() {
-			LogF.d(TAG, "getService()");
+			EventLog.d(TAG, "getService()");
 
 			return CWPControlService.this;
 		}
@@ -63,14 +63,14 @@ public class CWPControlService extends Service {
 
 	@Override
 	public IBinder onBind(Intent arg0) {
-		LogF.d(TAG, "onBind()");
+		EventLog.d(TAG, "onBind()");
 
 		return binder;
 	}
 
 	@Override
 	public void onCreate() {
-		LogF.d(TAG, "onCreate()");
+		EventLog.d(TAG, "onCreate()");
 
 		/* Get notification manager */
 		notifyManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -84,14 +84,14 @@ public class CWPControlService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		LogF.d(TAG, "onStartCommand()");
+		EventLog.d(TAG, "onStartCommand()");
 
 		return super.onStartCommand(intent, flags, startId);
 	}
 
 	@Override
 	public boolean onUnbind(Intent intent) {
-		LogF.d(TAG, "onUnbind()");
+		EventLog.d(TAG, "onUnbind()");
 
 		/* clear notifications to prevent calling unloaded activity */
 		notify = null;
@@ -101,14 +101,14 @@ public class CWPControlService extends Service {
 
 	@Override
 	public void onRebind(Intent intent) {
-		LogF.d(TAG, "onRebind()");
+		EventLog.d(TAG, "onRebind()");
 
 		super.onRebind(intent);
 	}
 
 	@Override
 	public void onDestroy() {
-		LogF.d(TAG, "onDestroy()");
+		EventLog.d(TAG, "onDestroy()");
 
 		/* Stop IO-thread */
 		ioThread.endWorkAndJoin();
@@ -157,7 +157,7 @@ public class CWPControlService extends Service {
 	/** Registers notification callbacks */
 	public synchronized void registerNotifications(
 			CWPControlNotification notify, Handler handler) {
-		LogF.d(TAG, "registerNotifications()");
+		EventLog.d(TAG, "registerNotifications()");
 
 		this.notify = notify;
 		notifyHandler = handler;
@@ -273,7 +273,7 @@ public class CWPControlService extends Service {
 
 	/** Called by MainActivity when touching lamp-image */
 	public void setSendingState(boolean setUpState) {
-		LogF.d(TAG, "setSendingState: %b", setUpState);
+		EventLog.d(TAG, "setSendingState: %b", setUpState);
 		ioThread.setSendingState(setUpState);
 	}
 

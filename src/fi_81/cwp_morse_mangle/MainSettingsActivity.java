@@ -25,7 +25,7 @@ public class MainSettingsActivity extends PreferenceActivity implements
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		LogF.d(TAG, "onCreate()");
+		EventLog.d(TAG, "onCreate()");
 
 		super.onCreate(savedInstanceState);
 
@@ -138,42 +138,42 @@ public class MainSettingsActivity extends PreferenceActivity implements
 
 	@Override
 	public void onRestart() {
-		LogF.d(TAG, "onRestart()");
+		EventLog.d(TAG, "onRestart()");
 
 		super.onRestart();
 	}
 
 	@Override
 	public void onStart() {
-		LogF.d(TAG, "onStart()");
+		EventLog.d(TAG, "onStart()");
 
 		super.onStart();
 	}
 
 	@Override
 	public void onResume() {
-		LogF.d(TAG, "onResume()");
+		EventLog.d(TAG, "onResume()");
 
 		super.onResume();
 	}
 
 	@Override
 	public void onPause() {
-		LogF.d(TAG, "onPause()");
+		EventLog.d(TAG, "onPause()");
 
 		super.onPause();
 	}
 
 	@Override
 	public void onStop() {
-		LogF.d(TAG, "onStop()");
+		EventLog.d(TAG, "onStop()");
 
 		super.onStop();
 	}
 
 	@Override
 	public void onDestroy() {
-		LogF.d(TAG, "onDestroy()");
+		EventLog.d(TAG, "onDestroy()");
 
 		/* cleanup */
 		hostAddr = null;
