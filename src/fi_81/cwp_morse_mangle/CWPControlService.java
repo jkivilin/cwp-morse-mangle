@@ -1,9 +1,5 @@
 package fi_81.cwp_morse_mangle;
 
-import fi_81.cwp_morse_mangle.morse.BitString;
-import fi_81.cwp_morse_mangle.morse.MorseCharList;
-import fi_81.cwp_morse_mangle.morse.MorseCodec;
-
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -33,9 +29,9 @@ public class CWPControlService extends Service {
 		abstract public void morseUpdated(String latest);
 
 		/**
-		 * Called when CWPService completes sending morse message.
+		 * Called when CWPService morse message sending state changes.
 		 */
-		abstract public void morseMessageComplete();
+		abstract public void morseMessageSendingState(boolean isSending, String messageBeingSend);
 
 		/**
 		 * Called when CWPService received frequency change message.
@@ -152,7 +148,7 @@ public class CWPControlService extends Service {
 
 		notifyManager.notify(R.string.app_name, notification);
 	}
-	
+
 	/** Request from MainActivity to clear notification */
 	public void clearNotification() {
 		notifyManager.cancel(R.string.app_name);
@@ -181,7 +177,8 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to send stateChange notifications to activity */
-	public void notifyStateChange(boolean recvStateUp, boolean sendStateUp) {
+	public void notifyStateChange(final boolean recvStateUp,
+			final boolean sendStateUp) {
 		Handler handler = getClientHandler();
 
 		int state = CWPControlNotification.STATE_DOWN;
@@ -192,7 +189,6 @@ public class CWPControlService extends Service {
 
 		if (handler != null) {
 			final int finalState = state;
-			final boolean finalRecvUp = recvStateUp;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
@@ -205,7 +201,7 @@ public class CWPControlService extends Service {
 					 */
 					if (notify != null)
 						notify.stateChange(finalState);
-					else if (finalRecvUp)
+					else if (recvStateUp)
 						sendNotification();
 				}
 			});
@@ -219,26 +215,25 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to notification of updated morse message to activity */
-	public void notifyMorseUpdates(String morse) {
+	public void notifyMorseUpdates(final String morse) {
 		Handler handler = getClientHandler();
 
 		if (handler != null) {
-			final String morseFinal = morse;
-
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
 					CWPControlNotification notify = getClientNotifier();
 
 					if (notify != null)
-						notify.morseUpdated(morseFinal);
+						notify.morseUpdated(morse);
 				}
 			});
 		}
 	}
 
 	/** Called when sending morse message completes */
-	public void notifyMorseMessageComplete() {
+	public void notifyMorseMessageSendingState(final boolean complete,
+			final String sendMorse) {
 		Handler handler = getClientHandler();
 
 		if (handler != null) {
@@ -248,26 +243,24 @@ public class CWPControlService extends Service {
 					CWPControlNotification notify = getClientNotifier();
 
 					if (notify != null)
-						notify.morseMessageComplete();
+						notify.morseMessageSendingState(complete, sendMorse);
 				}
 			});
 		}
 	}
 
 	/** Called when received frequency change message */
-	public void notifyFrequencyChange(long freq) {
+	public void notifyFrequencyChange(final long freq) {
 		Handler handler = getClientHandler();
 
 		if (handler != null) {
-			final long freqFinal = freq;
-
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
 					CWPControlNotification notify = getClientNotifier();
 
 					if (notify != null)
-						notify.frequencyChange(freqFinal);
+						notify.frequencyChange(freq);
 				}
 			});
 		}
@@ -286,11 +279,7 @@ public class CWPControlService extends Service {
 
 	/** Pushes morse message to CWP server */
 	public void sendMorseMessage(String message) {
-		String morseMessage = MorseCharList.SPECIAL_START_OF_MESSAGE + message
-				+ MorseCharList.SPECIAL_END_OF_CONTACT;
-		BitString morseBits = MorseCodec.encodeMessageToMorse(morseMessage);
-
-		ioThread.sendMorseMessage(morseBits);
+		ioThread.sendMorseMessage(message);
 	}
 
 	/** Pushed frequency change to CWP server */

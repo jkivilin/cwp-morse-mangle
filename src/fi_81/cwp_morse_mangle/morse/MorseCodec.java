@@ -18,7 +18,7 @@ public class MorseCodec {
 			.append(charStop));
 
 	/* Message string to morse code */
-	public static BitString encodeMessageToMorse(String message) {
+	public static BitString encodeMessageToMorse(CharSequence message) {
 		BitString output = new BitString();
 		boolean addCharStop = false;
 		boolean addWordStop = false;

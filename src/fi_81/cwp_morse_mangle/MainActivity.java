@@ -173,11 +173,17 @@ public class MainActivity extends Activity {
 		sendingMorseMessage = false;
 	}
 
-	/** Called when sending morse message to server */
-	private void sendMorseMessage() {
-		LogF.d(TAG, "sendMorseMessage()");
+	/** Called when sending morse message state is set on 
+	 * @param messageBeingSend */
+	private void sendingMorseMessageBusy(String messageBeingSend) {
+		if (sendingMorseMessage)
+			return;
 
 		sendingMorseMessage = true;
+		
+		/* set message text */
+		if (messageBeingSend != null)
+			morseEdit.setText(messageBeingSend);
 
 		/* Disable touching */
 		setTouchingState(false);
@@ -191,6 +197,14 @@ public class MainActivity extends Activity {
 
 		/* Make spinner visible */
 		morseProgress.setVisibility(View.VISIBLE);
+	}
+
+	/** Called when sending morse message to server */
+	private void sendMorseMessage() {
+		LogF.d(TAG, "sendMorseMessage()");
+
+		/* Disable input, visualize spinner */
+		sendingMorseMessageBusy(null);
 
 		/* Pass morse message to CWP Service for transfer */
 		if (serviceBound) {
@@ -240,7 +254,7 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.main);
-
+		
 		/*
 		 * Handle touching of lamp
 		 */
@@ -333,6 +347,10 @@ public class MainActivity extends Activity {
 		 */
 		channelEdit = (EditText) findViewById(R.id.edit_channel);
 		channelEdit.setEnabled(false);
+		
+		if (savedInstanceState != null)
+			currentChannel = savedInstanceState.getLong("current_channel");
+		channelEdit.setText(Long.toString(currentChannel));
 
 		/* Make sure that channel is in acceptable range */
 		channelEdit.setOnEditorActionListener(new OnEditorActionListener() {
@@ -509,7 +527,6 @@ public class MainActivity extends Activity {
 		LogF.d(TAG, "onSaveInstanceState()");
 
 		outState.putLong("current_channel", currentChannel);
-		outState.putBoolean("sending_morse_message", sendingMorseMessage);
 
 		super.onSaveInstanceState(outState);
 	}
@@ -519,8 +536,6 @@ public class MainActivity extends Activity {
 		LogF.d(TAG, "onRestoreInstanceState()");
 
 		currentChannel = savedInstanceState.getLong("current_channel");
-		sendingMorseMessage = savedInstanceState
-				.getBoolean("sending_morse_message");
 
 		super.onRestoreInstanceState(savedInstanceState);
 
@@ -619,8 +634,8 @@ public class MainActivity extends Activity {
 		}
 
 		@Override
-		public void morseMessageComplete() {
-			LogF.d(TAG, "morseMessageComplete()");
+		public void morseMessageSendingState(boolean isComplete, String messageBeingSend) {
+			LogF.d(TAG, "morseMessageSendingState()");
 
 			if (!serviceBound) {
 				LogF.w(TAG,
@@ -628,7 +643,10 @@ public class MainActivity extends Activity {
 				return;
 			}
 
-			sendingMorseMessageComplete();
+			if (isComplete)
+				sendingMorseMessageComplete();
+			else
+				sendingMorseMessageBusy(messageBeingSend);
 		}
 
 		@Override

@@ -64,10 +64,10 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		return new BitString(oneBits, numOnes, 0);
 	}
 
-	/* Convert String consisting of ones and zeros to BitString. */
-	public BitString(String string) {
+	/* Convert CharSequence consisting of ones and zeros to BitString. */
+	public BitString(CharSequence chars) {
 		/* Empty BitString, do not allocate BitSet. */
-		stringLength = string.length();
+		stringLength = chars.length();
 		if (stringLength == 0) {
 			bits = null;
 			return;
@@ -75,14 +75,26 @@ public class BitString implements Comparable<BitString>, CharSequence {
 
 		BitSet bits = new BitSet(stringLength);
 
-		int i = string.indexOf('1');
-		while (i >= 0) {
-			bits.set(i++);
+		/* Special handling for String-class */
+		if (chars.getClass() == String.class) {
+			String string = (String) chars;
 
-			if (i == stringLength)
-				break;
+			int i = string.indexOf('1');
+			while (i >= 0) {
+				bits.set(i++);
 
-			i = string.indexOf('1', i);
+				if (i == stringLength)
+					break;
+
+				i = string.indexOf('1', i);
+			}
+		} else {
+			for (int i = 0; i < stringLength; i++) {
+				char ch = chars.charAt(i);
+
+				if (ch == '1')
+					bits.set(i);
+			}
 		}
 
 		this.bitsOffset = 0;

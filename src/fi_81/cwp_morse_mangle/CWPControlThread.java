@@ -58,13 +58,15 @@ public class CWPControlThread extends Thread {
 	private CWInput cwpIn;
 	private CWOutput cwpOut;
 	private boolean busySendingMorseMessage = false;
+	private String sendMorseMessageString;
 
 	/* Send and receive channel states */
 	private boolean recvStateUp = false;
 	private boolean sendStateUp = false;
 	private long currFrequency = 1;
 	private BitString morseMessageBits;
-	private final StringBuffer morseMessage = new StringBuffer();
+	private final StringBuffer recvMorseMessage = new StringBuffer();
+	private final StringBuffer sendMorseMessage = new StringBuffer();
 
 	/* Parent service */
 	private CWPControlService cwpService;
@@ -112,8 +114,11 @@ public class CWPControlThread extends Thread {
 		recvStateUp = false;
 		sendStateUp = false;
 		currFrequency = 1;
-		busySendingMorseMessage = false;
 		morseMessageBits = null;
+		busySendingMorseMessage = false;
+		sendMorseMessageString = null;
+		recvMorseMessage.setLength(0);
+		sendMorseMessage.setLength(0);
 	}
 
 	/** Main loop of thread */
@@ -299,8 +304,8 @@ public class CWPControlThread extends Thread {
 					&& cwpOut.getOutputBuffer().remaining() == 0) {
 				/* Sending morse message completed */
 				busySendingMorseMessage = false;
-
-				cwpService.notifyMorseMessageComplete();
+				sendMorseMessageString = null;
+				cwpService.notifyMorseMessageSendingState(true, null);
 			}
 		}
 
@@ -362,10 +367,11 @@ public class CWPControlThread extends Thread {
 			case CWPThreadValue.TYPE_STATE_REQUEST:
 				cwpService.notifyFrequencyChange(currFrequency);
 				cwpService.notifyStateChange(recvStateUp, sendStateUp);
-				cwpService.notifyMorseUpdates(morseMessage.toString());
+				cwpService.notifyMorseUpdates(recvMorseMessage.toString());
+				cwpService.notifyMorseMessageSendingState(!busySendingMorseMessage, sendMorseMessageString);
 				break;
 			case CWPThreadValue.TYPE_CLEAR_MESSAGES:
-				morseMessage.setLength(0);
+				recvMorseMessage.setLength(0);
 				cwpService.notifyMorseUpdates("");
 				break;
 			}
@@ -376,20 +382,33 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
-	private void handleNewMorseMessage(BitString morseMessage) {
+	private void handleNewMorseMessage(String morse) {
 		if (connState == CONN_CONNECTED && cwpOut != null) {
 			/* Caller should make sure this does not happen */
 			if (busySendingMorseMessage)
 				return;
 
 			busySendingMorseMessage = true;
+			sendMorseMessageString = morse;
+
+			/* Convert message to morse-code BitString */
+			sendMorseMessage.setLength(0);
+			sendMorseMessage.append(MorseCharList.SPECIAL_START_OF_MESSAGE);
+			sendMorseMessage.append(morse);
+			sendMorseMessage.append(MorseCharList.SPECIAL_END_OF_CONTACT);
+
+			BitString morseBits = MorseCodec.encodeMessageToMorse(sendMorseMessage);
 
 			/* Fill in morse message */
 			cwpOut.sendDown();
-			cwpOut.sendMorseCode(morseMessage);
+			cwpOut.sendMorseCode(morseBits);
+
+			/* Report state to activity */
+			cwpService.notifyMorseMessageSendingState(false, sendMorseMessageString);
 		} else {
 			/* Just complete morse message sending when not connected */
-			cwpService.notifyMorseMessageComplete();
+			sendMorseMessageString = null;
+			cwpService.notifyMorseMessageSendingState(true, null);
 		}
 	}
 
@@ -507,11 +526,11 @@ public class CWPControlThread extends Thread {
 				LogF.d(TAG, "Received morse-message: '%s'", message);
 
 				/* Fill to main message buffer */
-				morseMessage.append(' ');
+				recvMorseMessage.append(' ');
 				for (char ch : message.toCharArray()) {
 					/* Handle SOS specially */
 					if (ch == MorseCharList.SPECIAL_SOS) {
-						morseMessage.append("¡SOS!");
+						recvMorseMessage.append("¡SOS!");
 						continue;
 					}
 
@@ -525,11 +544,11 @@ public class CWPControlThread extends Thread {
 					if (Character.isUpperCase(ch))
 						continue;
 
-					morseMessage.append(ch);
+					recvMorseMessage.append(ch);
 				}
 
 				/* Send updated morse-message string to UI */
-				cwpService.notifyMorseUpdates(morseMessage.toString());
+				cwpService.notifyMorseUpdates(recvMorseMessage.toString());
 
 				morseMessageBits = null;
 			}
@@ -628,9 +647,9 @@ public class CWPControlThread extends Thread {
 	}
 
 	/** Set to send morse message */
-	public void sendMorseMessage(BitString morseBits) {
+	public void sendMorseMessage(String morse) {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(this, morseBits));
+		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(this, morse));
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -732,11 +751,11 @@ public class CWPControlThread extends Thread {
 		}
 
 		protected static CWPThreadValue buildMorseMessage(
-				CWPControlThread parent, BitString morseBits) {
+				CWPControlThread parent, String morse) {
 			CWPThreadValue value = parent.getCWPThreadValue();
 
 			value.type = TYPE_MORSE_MESSAGE;
-			value.argObj0 = morseBits;
+			value.argObj0 = morse;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
 
@@ -809,8 +828,8 @@ public class CWPControlThread extends Thread {
 		/*
 		 * Values for TYPE_MORSE_MESSAGE
 		 */
-		protected BitString getMorseMessage() {
-			return (BitString) argObj0;
+		protected String getMorseMessage() {
+			return (String) argObj0;
 		}
 	}
 }

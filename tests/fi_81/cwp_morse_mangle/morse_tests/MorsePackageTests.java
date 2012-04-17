@@ -1,5 +1,7 @@
 package fi_81.cwp_morse_mangle.morse_tests;
 
+import java.nio.CharBuffer;
+
 import org.junit.Test;
 
 import android.util.Log;
@@ -16,12 +18,16 @@ public class MorsePackageTests extends TestCase {
 
 	@Test
 	public void test1_MorseChar() {
+		CharBuffer cb = CharBuffer.allocate(5);
+		cb.put("11101");
+		cb.flip();
+		
 		MorseChar mc0 = new MorseChar(new BitString("111"), 't');
 		MorseChar mc1 = new MorseChar(new BitString("1"), 'e');
 		MorseChar mc2 = new MorseChar(new BitString("101"), 'i');
 
 		MorseChar mc3 = new MorseChar(new BitString("10111"), 'a');
-		MorseChar mc4 = new MorseChar(new BitString("11101"), 'n');
+		MorseChar mc4 = new MorseChar(new BitString(cb), 'n');
 
 		assertTrue(mc0.getCharacter() == 't');
 		assertTrue(mc0.getMorseLength() == 3);
