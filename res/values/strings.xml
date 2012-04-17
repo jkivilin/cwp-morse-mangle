@@ -22,7 +22,9 @@
     <string name="pref_tone">Allow beep</string>
     <string name="pref_vibrator">Allow vibration</string>
     <string name="pref_lamp_setup">Signal notifications</string>
-    <string name="toast_cannot_send_sos">Cannot send SOS when already sending message...</string>
+    <string name="toast_cannot_send_sos">Cannot send SOS when already sending message…</string>
     <string name="menu_reset_connection">Reset connection</string>
+    <string name="notification_received_signal_title">Received signal</string>
+    <string name="notification_received_signal_text_wave">Received wave signal from CWP server</string>
 
 </resources>

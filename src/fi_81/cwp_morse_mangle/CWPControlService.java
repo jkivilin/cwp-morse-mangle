@@ -4,6 +4,9 @@ import fi_81.cwp_morse_mangle.morse.BitString;
 import fi_81.cwp_morse_mangle.morse.MorseCharList;
 import fi_81.cwp_morse_mangle.morse.MorseCodec;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
@@ -42,6 +45,7 @@ public class CWPControlService extends Service {
 
 	private static final String TAG = "CWPControlService";
 	private final IBinder binder = new CWPControlBinder();
+	private NotificationManager notifyManager;
 
 	/* Threading */
 	private CWPControlThread ioThread;
@@ -71,6 +75,9 @@ public class CWPControlService extends Service {
 	@Override
 	public void onCreate() {
 		LogF.d(TAG, "onCreate()");
+
+		/* Get notification manager */
+		notifyManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
 		/* Start IO-thread */
 		ioThread = new CWPControlThread(this);
@@ -107,15 +114,48 @@ public class CWPControlService extends Service {
 	public void onDestroy() {
 		LogF.d(TAG, "onDestroy()");
 
+		/* Stop IO-thread */
 		ioThread.endWorkAndJoin();
 		ioThread = null;
+
+		/* Clear notifications */
+		notifyManager.cancel(R.string.app_name);
+		notifyManager = null;
 
 		super.onDestroy();
 	}
 
-	/** New configuration for CWP service */
-	public void setConfiguration(String hostName, int hostPort, int morseSpeed) {
-		ioThread.setNewConfiguration(hostName, hostPort, morseSpeed);
+	/**
+	 * Send notification to system when receiving event but MainActivity is not
+	 * active
+	 */
+	private void sendNotification() {
+		/*
+		 * TODO: maybe make notification only activate on new decoded morse
+		 * messages?
+		 * 
+		 * or better, make it so that user can change preference of
+		 * notification: "Notifications: Off, On morse message, On signal."
+		 */
+		CharSequence notificationTitle = getText(R.string.notification_received_signal_title);
+
+		Notification notification = new Notification(R.drawable.ic_mangle,
+				notificationTitle, System.currentTimeMillis());
+
+		PendingIntent intent = PendingIntent.getActivity(this, 0, new Intent(
+				this, MainActivity.class), 0);
+
+		notification.setLatestEventInfo(this, notificationTitle,
+				getText(R.string.notification_received_signal_text_wave),
+				intent);
+		notification.flags |= Notification.FLAG_AUTO_CANCEL;
+
+		notifyManager.notify(R.string.app_name, notification);
+	}
+	
+	/** Request from MainActivity to clear notification */
+	public void clearNotification() {
+		notifyManager.cancel(R.string.app_name);
 	}
 
 	/** Registers notification callbacks */
@@ -152,16 +192,29 @@ public class CWPControlService extends Service {
 
 		if (handler != null) {
 			final int finalState = state;
+			final boolean finalRecvUp = recvStateUp;
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
 			handler.post(new Runnable() {
 				public void run() {
 					CWPControlNotification notify = getClientNotifier();
 
+					/*
+					 * Push state change to MainActivity and if activity is not
+					 * active, push notification if received wave state is up.
+					 */
 					if (notify != null)
 						notify.stateChange(finalState);
+					else if (finalRecvUp)
+						sendNotification();
 				}
 			});
+		} else if (recvStateUp) {
+			/*
+			 * MainActivity not available, push notification since state change
+			 * was up.
+			 */
+			sendNotification();
 		}
 	}
 
@@ -218,6 +271,11 @@ public class CWPControlService extends Service {
 				}
 			});
 		}
+	}
+
+	/** New configuration for CWP service */
+	public void setConfiguration(String hostName, int hostPort, int morseSpeed) {
+		ioThread.setNewConfiguration(hostName, hostPort, morseSpeed);
 	}
 
 	/** Called by MainActivity when touching lamp-image */

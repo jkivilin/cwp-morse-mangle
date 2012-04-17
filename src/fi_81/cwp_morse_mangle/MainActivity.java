@@ -427,6 +427,9 @@ public class MainActivity extends Activity {
 			cwpService.setConfiguration(DefaultSettings.getHostName(settings),
 					DefaultSettings.getHostPortInt(settings),
 					DefaultSettings.getMorseSpeedMillisec(settings));
+
+			/* Clear current notification */
+			cwpService.clearNotification();
 		}
 
 		super.onResume();
@@ -666,6 +669,9 @@ public class MainActivity extends Activity {
 			cwpService.setConfiguration(DefaultSettings.getHostName(settings),
 					DefaultSettings.getHostPortInt(settings),
 					DefaultSettings.getMorseSpeedMillisec(settings));
+
+			/* Clear current notification */
+			cwpService.clearNotification();
 
 			/*
 			 * Enable GUI objects (morse and channel editors, keep send button
