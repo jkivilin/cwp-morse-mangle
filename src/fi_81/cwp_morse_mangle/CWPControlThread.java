@@ -5,7 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.nio.channels.CancelledKeyException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -55,6 +55,7 @@ public class CWPControlThread extends Thread {
 	private InetSocketAddress connSockAddr;
 	private long connStartTime;
 	private SocketChannel connChannel;
+	private SelectionKey connSelKey;
 	private CWInput cwpIn;
 	private CWOutput cwpOut;
 	private boolean busySendingMorseMessage = false;
@@ -88,6 +89,11 @@ public class CWPControlThread extends Thread {
 	private void resetServerConnection() {
 		EventLog.d(TAG, "resetServerConnection()");
 
+		if (connSelKey != null) {
+			connSelKey.cancel();
+			connSelKey = null;
+		}
+
 		if (connState == CONN_CONNECTED) {
 			/* Should be non-null */
 			if (connChannel != null) {
@@ -119,6 +125,8 @@ public class CWPControlThread extends Thread {
 		sendMorseMessageString = null;
 		recvMorseMessage.setLength(0);
 		sendMorseMessage.setLength(0);
+		cwpIn = null;
+		cwpOut = null;
 
 		handleStateRequest();
 	}
@@ -252,7 +260,7 @@ public class CWPControlThread extends Thread {
 		}
 
 		/* Register read-channel to selector */
-		connChannel.register(selector, SelectionKey.OP_READ);
+		connSelKey = connChannel.register(selector, SelectionKey.OP_READ);
 
 		/* Connection has been created, initialize other components */
 		cwpIn = new CWInput();
@@ -269,24 +277,22 @@ public class CWPControlThread extends Thread {
 	 * @throws ClosedChannelException
 	 */
 	private void handleConnection() throws IOException {
-		int timeToNextOutWork, numReadyChannels;
+		int timeToNextOutWork, numReadyChannels, interestSet;
+
+		/* Always interested in reading */
+		interestSet = SelectionKey.OP_READ;
 
 		/* CWP output handling */
 		cwpOut.processOutput(outputNotify);
 
 		/* Check if need to register write-channel to selector */
 		if (cwpOut.getOutputBuffer().remaining() > 0) {
-			try {
-				connChannel.register(selector, SelectionKey.OP_WRITE);
-			} catch (CancelledKeyException cke) {
-				/*
-				 * Tried to register key that was cancelled in previous loop.
-				 * Clear cancelled state with selectNow().
-				 */
-				selector.selectNow();
-				connChannel.register(selector, SelectionKey.OP_WRITE);
-			}
+			/* Set interest on writing too */
+			interestSet |= SelectionKey.OP_WRITE;
 		}
+
+		/* Update interest set for key */
+		connSelKey.interestOps(interestSet);
 
 		/* Get time to next CWOutput work */
 		timeToNextOutWork = cwpOut.timeToNext();
@@ -316,6 +322,8 @@ public class CWPControlThread extends Thread {
 	}
 
 	private void handleNonBlockingNetworkIO() throws IOException {
+		ByteBuffer inBuf = cwpIn.getInBuffer();
+		ByteBuffer outBuf = cwpOut.getOutputBuffer();
 		Iterator<SelectionKey> keyIter = selector.selectedKeys().iterator();
 		int bytesCopied;
 
@@ -325,7 +333,7 @@ public class CWPControlThread extends Thread {
 
 			/* Input reader */
 			if (key.isValid() && key.isReadable()) {
-				bytesCopied = connChannel.read(cwpIn.getInBuffer());
+				bytesCopied = connChannel.read(inBuf);
 
 				EventLog.d(TAG, "handleNonBlockingNetworkIO(): read %d bytes",
 						bytesCopied);
@@ -333,15 +341,11 @@ public class CWPControlThread extends Thread {
 
 			/* Output writer */
 			if (key.isValid() && key.isWritable()) {
-				bytesCopied = connChannel.write(cwpOut.getOutputBuffer());
+				bytesCopied = connChannel.write(outBuf);
 
 				EventLog.d(TAG,
 						"handleNonBlockingNetworkIO(): written %d bytes",
 						bytesCopied);
-
-				/* Output buffer emptied, stop writing */
-				if (cwpOut.getOutputBuffer().remaining() == 0)
-					key.cancel();
 			}
 
 			keyIter.remove();

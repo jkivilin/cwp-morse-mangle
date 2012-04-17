@@ -118,7 +118,7 @@ public class CWInput {
 			/*
 			 * Frequency value is negated, so de-negate before passing
 			 */
-			notify.frequencyChange(-value);
+			notify.frequencyChange(-(long) value);
 		} else {
 			queue.pushStateUp(value);
 			notify.stateChange(CWave.TYPE_UP, value);
