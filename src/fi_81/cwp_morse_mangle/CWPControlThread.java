@@ -119,6 +119,8 @@ public class CWPControlThread extends Thread {
 		sendMorseMessageString = null;
 		recvMorseMessage.setLength(0);
 		sendMorseMessage.setLength(0);
+
+		handleStateRequest();
 	}
 
 	/** Main loop of thread */
@@ -365,10 +367,7 @@ public class CWPControlThread extends Thread {
 				handleNewMorseMessage(value.getMorseMessage());
 				break;
 			case CWPThreadValue.TYPE_STATE_REQUEST:
-				cwpService.notifyFrequencyChange(currFrequency);
-				cwpService.notifyStateChange(recvStateUp, sendStateUp);
-				cwpService.notifyMorseUpdates(recvMorseMessage.toString());
-				cwpService.notifyMorseMessageSendingState(!busySendingMorseMessage, sendMorseMessageString);
+				handleStateRequest();
 				break;
 			case CWPThreadValue.TYPE_CLEAR_MESSAGES:
 				recvMorseMessage.setLength(0);
@@ -380,6 +379,13 @@ public class CWPControlThread extends Thread {
 			if (freeQueue.size() < 16)
 				queuePush(freeQueue, value.clear());
 		}
+	}
+
+	private void handleStateRequest() {
+		cwpService.notifyFrequencyChange(currFrequency);
+		cwpService.notifyStateChange(recvStateUp, sendStateUp);
+		cwpService.notifyMorseUpdates(recvMorseMessage.toString());
+		cwpService.notifyMorseMessageSendingState(!busySendingMorseMessage, sendMorseMessageString);
 	}
 
 	private void handleNewMorseMessage(String morse) {
