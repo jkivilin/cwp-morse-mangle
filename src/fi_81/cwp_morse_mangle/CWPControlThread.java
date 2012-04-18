@@ -311,8 +311,16 @@ public class CWPControlThread extends Thread {
 		/* Wait for input */
 		if (timeToNextWork == 0)
 			numReadyChannels = selector.selectNow();
-		else
+		else {
+			/*
+			 * Workaround Java or Darvik bug, cannot handle Long.MAX_VALUE.
+			 * Throws SocketException.
+			 */
+			if (timeToNextWork > Integer.MAX_VALUE)
+				timeToNextWork = Integer.MAX_VALUE;
+
 			numReadyChannels = selector.select(timeToNextWork);
+		}
 
 		/* Receive and send data */
 		if (numReadyChannels > 0) {

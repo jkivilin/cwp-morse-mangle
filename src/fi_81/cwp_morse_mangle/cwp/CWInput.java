@@ -108,6 +108,8 @@ public class CWInput {
 		boolean forceFlush = timeToNextWork() == 0;
 
 		flushStaleMorseBits(notify, forceFlush);
+		if (forceFlush)
+			lastReceivedWaveTime = 0;
 
 		inBuf.compact();
 	}
@@ -178,6 +180,10 @@ public class CWInput {
 	}
 
 	public long timeToNextWork() {
+		/* If no received waves, don't wait */
+		if (lastReceivedWaveTime <= 0)
+			return Long.MAX_VALUE;
+
 		/* If less than zero, no data to be flushed */
 		long flushTimeout = morseDecoder.getFlushTimeout();
 		if (flushTimeout < 0)

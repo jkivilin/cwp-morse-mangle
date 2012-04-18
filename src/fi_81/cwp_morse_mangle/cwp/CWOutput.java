@@ -65,7 +65,7 @@ public class CWOutput {
 		long timeToNext = queue.peek().getOutTime() - timeSinceConnCreation;
 
 		if (timeToNext < 0)
-			return Long.MAX_VALUE;
+			return 0;
 
 		return timeToNext;
 	}
