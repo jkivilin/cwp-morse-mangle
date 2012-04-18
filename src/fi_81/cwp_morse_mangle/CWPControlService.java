@@ -45,7 +45,10 @@ public class CWPControlService extends Service {
 
 	private static final String TAG = "CWPControlService";
 	private final IBinder binder = new CWPControlBinder();
+
+	/* Notifications */
 	private NotificationManager notifyManager;
+	private boolean showingNotification = false;
 
 	/* Threading */
 	private CWPControlThread ioThread;
@@ -98,6 +101,7 @@ public class CWPControlService extends Service {
 		EventLog.d(TAG, "onUnbind()");
 
 		/* clear notifications to prevent calling unloaded activity */
+		clearNotification();
 		notify = null;
 
 		return super.onUnbind(intent);
@@ -137,6 +141,11 @@ public class CWPControlService extends Service {
 		 * or better, make it so that user can change preference of
 		 * notification: "Notifications: Off, On morse message, On signal."
 		 */
+		if (showingNotification)
+			return;
+
+		showingNotification = true;
+
 		CharSequence notificationTitle = getText(R.string.notification_received_signal_title);
 
 		Notification notification = new Notification(R.drawable.ic_mangle,
@@ -156,6 +165,7 @@ public class CWPControlService extends Service {
 	/** Request from MainActivity to clear notification */
 	public void clearNotification() {
 		notifyManager.cancel(R.string.app_name);
+		showingNotification = false;
 	}
 
 	/** Registers notification callbacks */
