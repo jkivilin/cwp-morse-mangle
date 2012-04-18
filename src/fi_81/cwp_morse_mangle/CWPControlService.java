@@ -320,6 +320,7 @@ public class CWPControlService extends Service {
 		CWPRunnable run = popFromMemoryPool();
 
 		run.type = CWPRunnable.TYPE_FREQUENCY_CHANGE;
+		run.parent = this;
 		run.argBool0 = false;
 		run.argStr0 = null;
 		run.argLong0 = freq;
