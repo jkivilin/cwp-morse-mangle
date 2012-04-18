@@ -122,8 +122,6 @@ public class CWPControlThread extends Thread {
 			connState = CONN_RESOLVING_ADDRESS;
 		}
 
-		/* TODO: force/clear flush morse queue at freq change (in CWInput) */
-
 		/* Clear pending morse message */
 		handleReceivedMorseMessageBuffer();
 
@@ -549,6 +547,9 @@ public class CWPControlThread extends Thread {
 
 		public void frequencyChange(long newFreq) {
 			EventLog.d(TAG, "freq-change: %d", newFreq);
+
+			/* flush pending morse */
+			cwpIn.flushStaleMorseBits(inputNotify, true);
 
 			/* Clear pending morse message */
 			handleReceivedMorseMessageBuffer();
