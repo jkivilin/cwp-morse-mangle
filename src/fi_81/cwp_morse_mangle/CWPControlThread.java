@@ -287,7 +287,8 @@ public class CWPControlThread extends Thread {
 	 * @throws ClosedChannelException
 	 */
 	private void handleConnection() throws IOException {
-		int timeToNextOutWork, numReadyChannels, interestSet;
+		long timeToNextOutWork;
+		int numReadyChannels, interestSet;
 
 		/* Always interested in reading */
 		interestSet = SelectionKey.OP_READ;
@@ -311,8 +312,7 @@ public class CWPControlThread extends Thread {
 		if (timeToNextOutWork == 0)
 			numReadyChannels = selector.selectNow();
 		else
-			numReadyChannels = selector.select(timeToNextOutWork < 0 ? 0
-					: timeToNextOutWork);
+			numReadyChannels = selector.select(timeToNextOutWork);
 
 		/* Receive and send data */
 		if (numReadyChannels > 0) {

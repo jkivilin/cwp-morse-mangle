@@ -55,17 +55,17 @@ public class CWOutput {
 		return outBuf;
 	}
 
-	public int timeToNext() {
+	public long timeToNext() {
 		/* no next, return -1 */
 		if (queue.isEmpty())
-			return -1;
+			return Long.MAX_VALUE;
 
 		long currentTime = System.currentTimeMillis();
-		int timeSinceConnCreation = (int) (currentTime - startTime);
-		int timeToNext = queue.get(0).getOutTime() - timeSinceConnCreation;
+		long timeSinceConnCreation = currentTime - startTime;
+		long timeToNext = queue.get(0).getOutTime() - timeSinceConnCreation;
 
 		if (timeToNext < 0)
-			return -1;
+			return Long.MAX_VALUE;
 
 		return timeToNext;
 	}
@@ -79,7 +79,7 @@ public class CWOutput {
 		 * queue
 		 */
 		long currentTime = System.currentTimeMillis();
-		int timeSinceConnCreation = (int) (currentTime - startTime);
+		long timeSinceConnCreation = currentTime - startTime;
 
 		if (queue.get(0).getOutTime() <= timeSinceConnCreation)
 			return true;
@@ -103,7 +103,7 @@ public class CWOutput {
 
 		/* adjust timestamps based on time since connection was created */
 		long currentTime = System.currentTimeMillis();
-		int timeSinceConnCreation = (int) (currentTime - startTime);
+		long timeSinceConnCreation = currentTime - startTime;
 		CWStateChange last = null;
 
 		for (CWStateChange stateChange : queue) {
@@ -155,8 +155,8 @@ public class CWOutput {
 		/* from manual up to down, check elapsed time and add message to queue */
 		if (inManualUp && stateChange == CWStateChange.TYPE_UP_TO_DOWN) {
 			long currentTime = System.currentTimeMillis();
+			long timestamp = currentTime - startTime;
 			int upStateDuration = (int) (currentTime - manualUpStartTime);
-			int timestamp = (int) (currentTime - startTime);
 
 			queue.add(new CWStateChange(stateChange, upStateDuration, timestamp));
 
@@ -172,9 +172,9 @@ public class CWOutput {
 		 */
 		if (!inManualUp && stateChange == CWStateChange.TYPE_DOWN_TO_UP) {
 			manualUpStartTime = System.currentTimeMillis();
-			int timestamp = (int) (manualUpStartTime - startTime);
+			long timestamp = manualUpStartTime - startTime;
 
-			queue.add(new CWStateChange(stateChange, timestamp, timestamp));
+			queue.add(new CWStateChange(stateChange, (int) timestamp, timestamp));
 
 			inManualUp = true;
 			return true;

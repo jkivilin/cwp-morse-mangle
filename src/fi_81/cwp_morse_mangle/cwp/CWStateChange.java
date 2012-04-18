@@ -11,9 +11,9 @@ public class CWStateChange {
 	protected int value;
 
 	/* time since creation of connection when to send this message */
-	private int outTime;
+	private long outTime;
 
-	public CWStateChange(byte type, int timestampOrDuration, int outTime) {
+	public CWStateChange(byte type, int timestampOrDuration, long outTime) {
 		this.type = type;
 		this.value = timestampOrDuration;
 		this.outTime = outTime;
@@ -27,11 +27,11 @@ public class CWStateChange {
 		return value;
 	}
 
-	public int getOutTime() {
+	public long getOutTime() {
 		return outTime;
 	}
 
-	public void addTimestamp(int timestamp) {
+	public void addTimestamp(long timestamp) {
 		if (type == TYPE_DOWN_TO_UP)
 			value += timestamp;
 		outTime += timestamp;
