@@ -70,7 +70,7 @@ public class CWStateChangeQueueFromMorseCode {
 	}
 
 	/* Memory pool for CWStateChanges */
-	private final int CWSTATE_CHANGE_MEMPOOL_MAX_SIZE = 32;
+	private final int CWSTATE_CHANGE_MEMPOOL_MAX_SIZE = 128;
 	private final ArrayDeque<CWStateChange> freeQueue = new ArrayDeque<CWStateChange>();
 
 	/* Memory pool allocator for CWStateChanges */
@@ -87,11 +87,12 @@ public class CWStateChangeQueueFromMorseCode {
 	}
 
 	/* Pushes unused CWStateChange back to freeQueue */
-	public void pushToMemPool(CWStateChange unusedStateChange) {
+	public boolean pushToMemPool(CWStateChange unusedStateChange) {
 		if (freeQueue.size() >= CWSTATE_CHANGE_MEMPOOL_MAX_SIZE)
-			return;
+			return false;
 
 		freeQueue.push(unusedStateChange);
+		return true;
 	}
 
 	/* CWStateChange allocator from mem-pool */

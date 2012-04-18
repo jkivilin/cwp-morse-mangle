@@ -135,7 +135,7 @@ public class CWPControlThread extends Thread {
 		cwpOut = null;
 
 		handleStateRequest();
-		
+
 		/* Perform GC at this stage */
 		System.gc();
 	}
@@ -143,7 +143,7 @@ public class CWPControlThread extends Thread {
 	/** Main loop of thread */
 	private void run_loop() {
 		try {
-			EventLog.d(TAG, "run_loop(): %d", connState);
+			/* EventLog.d(TAG, "run_loop(): %d", connState); */
 
 			switch (connState) {
 			default:
@@ -239,7 +239,7 @@ public class CWPControlThread extends Thread {
 			connState = CONN_RESOLVING_ADDRESS;
 
 			/* Short sleep to avoid busy loop */
-			sleep(200);
+			sleep(2000);
 			return;
 		} catch (ClosedByInterruptException cbie) {
 			/*

@@ -12,6 +12,10 @@ public class CWave implements Comparable<CWave> {
 		this.duration = duration;
 	}
 
+	public CWave() {
+		this((byte) 0, 0);
+	}
+
 	public int compareTo(CWave o) {
 		int diff = this.duration - o.duration;
 
