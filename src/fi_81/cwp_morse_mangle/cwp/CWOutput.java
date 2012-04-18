@@ -2,8 +2,7 @@ package fi_81.cwp_morse_mangle.cwp;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
 
 import fi_81.cwp_morse_mangle.morse.BitString;
 
@@ -15,7 +14,7 @@ public class CWOutput {
 		public abstract void stateChange(byte newState, int value);
 	}
 
-	public class CWOutputNotificationNone implements CWOutputNotification {
+	public static class NotificationNone implements CWOutputNotification {
 		public void frequencyChange(long newFreq) {
 		}
 
@@ -24,7 +23,7 @@ public class CWOutput {
 	}
 
 	private ByteBuffer outBuf;
-	private List<CWStateChange> queue;
+	private ArrayList<CWStateChange> queue;
 	private long startTime;
 
 	private boolean inManualUp;
@@ -36,7 +35,7 @@ public class CWOutput {
 	}
 
 	public CWOutput(ByteBuffer bb, long connectionStartTime) {
-		queue = new LinkedList<CWStateChange>();
+		queue = new ArrayList<CWStateChange>();
 		startTime = connectionStartTime;
 		inManualUp = false;
 		manualUpStartTime = 0;

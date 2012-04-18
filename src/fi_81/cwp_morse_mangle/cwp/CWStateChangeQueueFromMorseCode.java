@@ -1,7 +1,6 @@
 package fi_81.cwp_morse_mangle.cwp;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
 
 import fi_81.cwp_morse_mangle.cwp.CWStateChange;
 import fi_81.cwp_morse_mangle.morse.BitString;
@@ -26,8 +25,8 @@ public class CWStateChangeQueueFromMorseCode {
 		return signalWidth;
 	}
 
-	public static List<CWStateChange> encode(BitString bits) {
-		LinkedList<CWStateChange> states = new LinkedList<CWStateChange>();
+	public static ArrayList<CWStateChange> encode(BitString bits) {
+		ArrayList<CWStateChange> states = new ArrayList<CWStateChange>();
 		int i, len = bits.length();
 		boolean isUp = false;
 		int timestamp = 0;

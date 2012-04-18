@@ -16,7 +16,7 @@ public class CWInput {
 		public abstract void morseMessage(BitString morseBits);
 	}
 
-	public class CWInputNotificationNone implements CWInputNotification {
+	public static class NotificationNone implements CWInputNotification {
 		public void frequencyChange(long newFreq) {
 		}
 
@@ -58,8 +58,21 @@ public class CWInput {
 	}
 
 	public void flushStaleMorseBits(CWInputNotification notify, boolean force) {
+		BitString morseBits;
+
+		/* Force decoding */
+		if (force) {
+			do {
+				morseBits = morseDecoder.tryDecode(queue, true);
+				if (morseBits != null) {
+					notify.morseMessage(morseBits);
+					continue;
+				}
+			} while (morseBits != null);
+		}
+
 		/* Flush morse buffer, either by force or by timeout */
-		BitString morseBits = morseDecoder.flushStalled(force);
+		morseBits = morseDecoder.flushStalled(force);
 		if (morseBits != null)
 			notify.morseMessage(morseBits);
 	}
@@ -93,17 +106,19 @@ public class CWInput {
 
 			if (out)
 				break;
-		}
 
-		/*
-		 * After receiving data, decode buffered wave-form to morse code.
-		 */
-		BitString morseBits;
-		do {
-			morseBits = morseDecoder.tryDecode(queue);
-			if (morseBits != null)
-				notify.morseMessage(morseBits);
-		} while (morseBits != null);
+			/*
+			 * After receiving data, decode buffered wave-form to morse code.
+			 * Decode after each received message, as this enforces same
+			 * behavior in test-cases as in real world.
+			 */
+			BitString morseBits;
+			do {
+				morseBits = morseDecoder.tryDecode(queue, false);
+				if (morseBits != null)
+					notify.morseMessage(morseBits);
+			} while (morseBits != null);
+		}
 
 		/*
 		 * Let morseDecoder to flush too old stale morse bits

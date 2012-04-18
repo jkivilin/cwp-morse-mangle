@@ -50,7 +50,7 @@ public class CWaveQueueToMorseCode {
 		adaptionWidth = 0.0;
 	}
 
-	public BitString tryDecode(CWInputQueue queue) {
+	public BitString tryDecode(CWInputQueue queue, boolean force) {
 		boolean readapted = false;
 
 		if (!queue.isQueueReadReady())
@@ -59,11 +59,15 @@ public class CWaveQueueToMorseCode {
 		/* Attempt to detect short morse signal width */
 		if (adaptionWidth <= 0.0) {
 			do {
-				adaptionWidth = detectSignalWidth(queue, -1);
+				adaptionWidth = detectSignalWidth(queue, -1, force);
 				readapted = true;
 
-				if (adaptionWidth <= 0.0)
-					return null;
+				if (adaptionWidth <= 0.0) {
+					if (!force)
+						return null;
+
+					adaptionWidth = 1.0;
+				}
 
 				/* purge and ignore too width signals */
 				if (adaptionWidth > MORSE_MAX_ADAPTION_WIDTH)
@@ -225,7 +229,7 @@ public class CWaveQueueToMorseCode {
 				if (readapted && i == 0)
 					queue.completeWavesFromBegining(1);
 
-				return tryDecode(queue);
+				return tryDecode(queue, force);
 			}
 
 			/*
@@ -302,6 +306,10 @@ public class CWaveQueueToMorseCode {
 		private double average;
 
 		private WaveGroup() {
+			clear();
+		}
+
+		private void clear() {
 			sum = 0;
 			count = 0;
 			average = 0;
@@ -345,7 +353,11 @@ public class CWaveQueueToMorseCode {
 		}
 	}
 
-	private double detectSignalWidth(CWInputQueue queue, int sampleLimit) {
+	private final WaveGroup detectSignalGroup[] = { new WaveGroup(),
+			new WaveGroup(), new WaveGroup() };
+
+	private double detectSignalWidth(CWInputQueue queue, int sampleLimit,
+			boolean force) {
 		if (queue.queueLength() <= 0)
 			return 0.0;
 
@@ -354,10 +366,11 @@ public class CWaveQueueToMorseCode {
 			return 0.0;
 		}
 
+		final WaveGroup group[] = detectSignalGroup;
 		boolean waitForUp = true;
-		Object[] waves;
-		WaveGroup group[] = new WaveGroup[3];
+		boolean checkedDetectionOk = false;
 		int i, oldGroup, currGroup = -1;
+		Object[] waves;
 
 		/*
 		 * sample limit to prevent mixing of morse messages of different signal
@@ -371,7 +384,7 @@ public class CWaveQueueToMorseCode {
 		}
 
 		for (i = 0; i < group.length; i++)
-			group[i] = new WaveGroup();
+			group[i].clear();
 
 		/* sort current waves by duration */
 		Arrays.sort(waves);
@@ -390,10 +403,11 @@ public class CWaveQueueToMorseCode {
 			/* Ignore leading down-waves */
 			if (waitForUp && wave.type == CWave.TYPE_DOWN)
 				continue;
-			else
-				waitForUp = false;
 
+			waitForUp = false;
+			checkedDetectionOk = false;
 			oldGroup = currGroup;
+
 			switch (currGroup) {
 			case -1:
 				/*
@@ -477,9 +491,10 @@ public class CWaveQueueToMorseCode {
 				/* perform sanity checks against bad width detection */
 				if (!isDetectedWidthOk(WaveGroup.groupsAverage(group), queue)) {
 					waves = null;
-					group = null;
-					return detectSignalWidth(queue, sampleLimit / 2);
+					return detectSignalWidth(queue, sampleLimit / 2, force);
 				}
+
+				checkedDetectionOk = true;
 			}
 
 			if (currGroup == 3)
@@ -488,6 +503,15 @@ public class CWaveQueueToMorseCode {
 
 		/* Combine gathered group averages for detected signal width */
 		double width = WaveGroup.groupsAverage(group);
+
+		/*
+		 * perform sanity checks against bad width detection (only when not in
+		 * forced decoding mode)
+		 */
+		if (!force) {
+			if (!checkedDetectionOk && !isDetectedWidthOk(width, queue))
+				return 0.0;
+		}
 
 		if (width < 1.0)
 			width = 1.0;
@@ -549,7 +573,7 @@ public class CWaveQueueToMorseCode {
 		 */
 		int totalOkCount = shortOkCount + longOkCount + wordbreakOkCount;
 
-		return totalOkCount > 0 && shortOkCount > 0;
+		return shortOkCount > 0 && totalOkCount > shortOkCount;
 	}
 
 	public boolean hadPendingBits() {
