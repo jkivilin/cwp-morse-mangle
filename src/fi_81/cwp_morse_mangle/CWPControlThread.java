@@ -499,7 +499,7 @@ public class CWPControlThread extends Thread {
 	/** Decode received morse bits to message string and pass to UI-thread */
 	private void handleReceivedMorseMessageBuffer() {
 		/* Nothing to process? */
-		if (morseMessageBits.length() == 0)
+		if (morseMessageBits == null || morseMessageBits.length() == 0)
 			return;
 
 		morseMessageBits = morseMessageBits.append(BitString.newZeros(3));
