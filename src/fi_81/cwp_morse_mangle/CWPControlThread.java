@@ -133,7 +133,6 @@ public class CWPControlThread extends Thread {
 		morseMessageBits = null;
 		busySendingMorseMessage = false;
 		sendMorseMessageString = null;
-		recvMorseMessage.setLength(0);
 		sendMorseMessage.setLength(0);
 		cwpIn = null;
 		cwpOut = null;
