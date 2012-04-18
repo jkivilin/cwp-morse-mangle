@@ -300,6 +300,13 @@ public class CWaveQueueToMorseCode {
 		return morseCode;
 	}
 
+	public boolean hadPendingBits() {
+		if (morseBits == null)
+			return false;
+
+		return (morseBits.length() > 0);
+	}
+
 	private static class WaveGroup {
 		private int sum;
 		private int count;
@@ -576,10 +583,11 @@ public class CWaveQueueToMorseCode {
 		return shortOkCount > 0 && totalOkCount > shortOkCount;
 	}
 
-	public boolean hadPendingBits() {
-		if (morseBits == null)
-			return false;
+	public long getFlushTimeout() {
+		double width = adaptionWidth;
+		if (width <= 0.0)
+			width = 250.0;
 
-		return (morseBits.length() > 0);
+		return (long) (width * (MORSE_WORDBREAK_WIDTH + 1));
 	}
 }

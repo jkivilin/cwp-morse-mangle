@@ -31,8 +31,10 @@ public class CWInput {
 	private ByteBuffer inBuf;
 	private CWInputQueue queue;
 	private final CWaveQueueToMorseCode morseDecoder = new CWaveQueueToMorseCode();
+	private long lastReceivedWaveTime;
 
 	public CWInput(CWInputQueue queue, ByteBuffer bb) {
+		lastReceivedWaveTime = 0;
 		this.queue = queue;
 
 		if (bb == null) {
@@ -55,26 +57,6 @@ public class CWInput {
 
 	public ByteBuffer getInBuffer() {
 		return inBuf;
-	}
-
-	public void flushStaleMorseBits(CWInputNotification notify, boolean force) {
-		BitString morseBits;
-
-		/* Force decoding */
-		if (force) {
-			do {
-				morseBits = morseDecoder.tryDecode(queue, true);
-				if (morseBits != null) {
-					notify.morseMessage(morseBits);
-					continue;
-				}
-			} while (morseBits != null);
-		}
-
-		/* Flush morse buffer, either by force or by timeout */
-		morseBits = morseDecoder.flushStalled(force);
-		if (morseBits != null)
-			notify.morseMessage(morseBits);
 	}
 
 	public void processInput(CWInputNotification notify) {
@@ -123,7 +105,9 @@ public class CWInput {
 		/*
 		 * Let morseDecoder to flush too old stale morse bits
 		 */
-		flushStaleMorseBits(notify, false);
+		boolean forceFlush = timeToNextWork() == 0;
+
+		flushStaleMorseBits(notify, forceFlush);
 
 		inBuf.compact();
 	}
@@ -165,9 +149,48 @@ public class CWInput {
 		/* At up state, so this must be state-change:down */
 		queue.pushStateDown(value);
 		notify.stateChange(CWave.TYPE_DOWN, value);
+
+		lastReceivedWaveTime = System.currentTimeMillis();
+	}
+
+	public void flushStaleMorseBits(CWInputNotification notify, boolean force) {
+		BitString morseBits;
+
+		/* Force decoding */
+		if (force) {
+			do {
+				morseBits = morseDecoder.tryDecode(queue, true);
+				if (morseBits != null) {
+					notify.morseMessage(morseBits);
+					continue;
+				}
+			} while (morseBits != null);
+		}
+
+		/* Flush morse buffer, either by force or by timeout */
+		morseBits = morseDecoder.flushStalled(force);
+		if (morseBits != null)
+			notify.morseMessage(morseBits);
 	}
 
 	public boolean hadPendingBits() {
 		return morseDecoder.hadPendingBits();
+	}
+
+	public long timeToNextWork() {
+		/* If less than zero, no data to be flushed */
+		long flushTimeout = morseDecoder.getFlushTimeout();
+		if (flushTimeout < 0)
+			return Long.MAX_VALUE;
+
+		/* Get time to next forced flush of morse-decoder */
+		long timeToFlush = (lastReceivedWaveTime + flushTimeout)
+				- System.currentTimeMillis();
+
+		/* If timeout has passed return zero */
+		if (timeToFlush <= 0)
+			return 0;
+
+		return timeToFlush;
 	}
 }

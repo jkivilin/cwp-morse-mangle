@@ -55,7 +55,7 @@ public class CWOutput {
 		return outBuf;
 	}
 
-	public long timeToNext() {
+	public long timeToNextWork() {
 		/* no next, return -1 */
 		if (queue.isEmpty())
 			return Long.MAX_VALUE;
