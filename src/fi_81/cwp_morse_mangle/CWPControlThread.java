@@ -12,8 +12,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.ArrayDeque;
 
 import fi_81.cwp_morse_mangle.cwp.*;
 import fi_81.cwp_morse_mangle.cwp.CWInput.CWInputNotification;
@@ -34,11 +35,9 @@ public class CWPControlThread extends Thread {
 	/* Used to signal thread to end work */
 	private AtomicBoolean isThreadKilled = new AtomicBoolean(false);
 
-	/* Synchronized queue used for passing data to IO-thread */
-	private final Vector<CWPThreadValue> msgQueue = new Vector<CWPThreadValue>(
-			16);
-	private final Vector<CWPThreadValue> freeQueue = new Vector<CWPThreadValue>(
-			16);
+	/* ArrayDeque used for passing data to IO-thread */
+	private final ArrayDeque<CWPThreadValue> msgQueue = new ArrayDeque<CWPThreadValue>();
+	private final ArrayDeque<CWPThreadValue> freeQueue = new ArrayDeque<CWPThreadValue>();
 
 	/* Selector for blocking on non-blocking sockets */
 	private Selector selector;
@@ -711,15 +710,19 @@ public class CWPControlThread extends Thread {
 		interrupt();
 	}
 
-	private static void queuePush(Vector<CWPThreadValue> queue,
+	private static void queuePush(ArrayDeque<CWPThreadValue> queue,
 			CWPThreadValue value) {
-		queue.add(value);
+		synchronized (queue) {
+			queue.push(value);
+		}
 	}
 
-	private static CWPThreadValue queuePop(Vector<CWPThreadValue> queue) {
+	private static CWPThreadValue queuePop(ArrayDeque<CWPThreadValue> queue) {
 		try {
-			return queue.remove(0);
-		} catch (IndexOutOfBoundsException IOOBE) {
+			synchronized (queue) {
+				return queue.pop();
+			}
+		} catch (NoSuchElementException NSEE) {
 			/* empty queue */
 			return null;
 		}
