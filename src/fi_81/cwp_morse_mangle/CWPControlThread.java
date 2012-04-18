@@ -130,7 +130,6 @@ public class CWPControlThread extends Thread {
 		/* Clear connection state */
 		recvStateUp = false;
 		sendStateUp = false;
-		currFrequency = 1;
 		morseMessageBits = null;
 		busySendingMorseMessage = false;
 		sendMorseMessageString = null;
