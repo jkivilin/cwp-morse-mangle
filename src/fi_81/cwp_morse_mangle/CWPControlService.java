@@ -1,5 +1,8 @@
 package fi_81.cwp_morse_mangle;
 
+import java.util.ArrayDeque;
+import java.util.NoSuchElementException;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -177,9 +180,168 @@ public class CWPControlService extends Service {
 		return notifyHandler;
 	}
 
+	/** Runnable class for passing messages from IO-thread to UI-thread */
+	private static class CWPRunnable implements Runnable {
+		public static final int TYPE_STATE_CHANGE = 0;
+		public static final int TYPE_FREQUENCY_CHANGE = 1;
+		public static final int TYPE_MORSE_MESSAGE_UPDATE = 2;
+		public static final int TYPE_MORSE_SENDING_STATE = 3;
+
+		private int type;
+		private boolean argBool0;
+		private String argStr0;
+		private long argLong0;
+		private CWPControlService parent;
+
+		public CWPRunnable(CWPControlService service) {
+			parent = service;
+			type = 0;
+			argBool0 = false;
+			argStr0 = null;
+			argLong0 = 0;
+		}
+
+		public void run() {
+			CWPControlNotification notify = parent.getClientNotifier();
+
+			switch (type) {
+			case TYPE_STATE_CHANGE:
+				int state = (int) argLong0;
+				boolean recvStateUp = argBool0;
+
+				/*
+				 * Push state change to MainActivity and if activity is not
+				 * active, push notification if received wave state is up.
+				 */
+				if (notify != null)
+					notify.stateChange(state);
+				else if (recvStateUp)
+					parent.sendNotification();
+
+				break;
+
+			case TYPE_FREQUENCY_CHANGE:
+				long freq = argLong0;
+
+				if (notify != null)
+					notify.frequencyChange(freq);
+
+				break;
+
+			case TYPE_MORSE_MESSAGE_UPDATE:
+				String morseMessage = argStr0;
+
+				if (notify != null)
+					notify.morseUpdated(morseMessage);
+
+				break;
+
+			case TYPE_MORSE_SENDING_STATE:
+				boolean isComplete = argBool0;
+				String sendMorse = argStr0;
+
+				if (notify != null)
+					notify.morseMessageSendingState(isComplete, sendMorse);
+
+				break;
+			}
+
+			CWPControlService service = parent;
+
+			/* Clear references before passing to memory pool */
+			parent = null;
+			argStr0 = null;
+
+			/* Runnable is now free for reuse */
+			service.pushToMemoryPool(this);
+		}
+	};
+
+	/** Memory pool for CWPRunnable */
+	private final int CWPRUNNABLE_MEMPOOL_MAX_SIZE = 16;
+	private final ArrayDeque<CWPRunnable> freeQueue = new ArrayDeque<CWPRunnable>();
+
+	/** Memory pool allocator for CWPRunnable */
+	private CWPRunnable popFromMemoryPool() {
+		synchronized (freeQueue) {
+			if (freeQueue.size() == 0)
+				return new CWPRunnable(this);
+
+			try {
+				CWPRunnable run = freeQueue.pop();
+				return run;
+			} catch (NoSuchElementException NSEE) {
+				return new CWPRunnable(this);
+			}
+		}
+	}
+
+	/** Pushes unused CWPRunnable to freeQueue */
+	private boolean pushToMemoryPool(CWPRunnable unusedRunnable) {
+		synchronized (freeQueue) {
+			if (freeQueue.size() >= CWPRUNNABLE_MEMPOOL_MAX_SIZE)
+				return false;
+
+			freeQueue.push(unusedRunnable);
+			return true;
+		}
+	}
+
+	/** CWPRunnable allocator from mem-pool */
+	private CWPRunnable newCWPRunnableFromMemoryPool(boolean recvStateUp,
+			int state) {
+		CWPRunnable run = popFromMemoryPool();
+
+		run.type = CWPRunnable.TYPE_STATE_CHANGE;
+		run.parent = this;
+		run.argBool0 = recvStateUp;
+		run.argLong0 = state;
+		run.argStr0 = null;
+
+		return run;
+	}
+
+	/** CWPRunnable allocator from mem-pool */
+	private CWPRunnable newCWPRunnableFromMemoryPool(boolean isComplete,
+			String sendMorse) {
+		CWPRunnable run = popFromMemoryPool();
+
+		run.type = CWPRunnable.TYPE_MORSE_SENDING_STATE;
+		run.parent = this;
+		run.argBool0 = isComplete;
+		run.argStr0 = sendMorse;
+		run.argLong0 = 0;
+
+		return run;
+	}
+
+	/** CWPRunnable allocator from mem-pool */
+	private CWPRunnable newCWPRunnableFromMemoryPool(long freq) {
+		CWPRunnable run = popFromMemoryPool();
+
+		run.type = CWPRunnable.TYPE_FREQUENCY_CHANGE;
+		run.argBool0 = false;
+		run.argStr0 = null;
+		run.argLong0 = freq;
+
+		return run;
+	}
+
+	/** CWPRunnable allocator from mem-pool */
+	private CWPRunnable newCWPRunnableFromMemoryPool(String morseMessage) {
+		CWPRunnable run = popFromMemoryPool();
+
+		run.type = CWPRunnable.TYPE_MORSE_MESSAGE_UPDATE;
+		run.parent = this;
+		run.argBool0 = false;
+		run.argStr0 = morseMessage;
+		run.argLong0 = 0;
+
+		return run;
+	}
+
 	/** Called when need to send stateChange notifications to activity */
-	public void notifyStateChange(final boolean recvStateUp,
-			final boolean sendStateUp) {
+	public void notifyStateChange(boolean recvStateUp, boolean sendStateUp) {
 		Handler handler = getClientHandler();
 
 		int state = CWPControlNotification.STATE_DOWN;
@@ -189,23 +351,11 @@ public class CWPControlService extends Service {
 			state = CWPControlNotification.STATE_UP;
 
 		if (handler != null) {
-			final int finalState = state;
+			CWPRunnable run = newCWPRunnableFromMemoryPool(recvStateUp, state);
 
 			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(new Runnable() {
-				public void run() {
-					CWPControlNotification notify = getClientNotifier();
-
-					/*
-					 * Push state change to MainActivity and if activity is not
-					 * active, push notification if received wave state is up.
-					 */
-					if (notify != null)
-						notify.stateChange(finalState);
-					else if (recvStateUp)
-						sendNotification();
-				}
-			});
+			if (!handler.post(run))
+				pushToMemoryPool(run);
 		} else if (recvStateUp) {
 			/*
 			 * MainActivity not available, push notification since state change
@@ -216,54 +366,42 @@ public class CWPControlService extends Service {
 	}
 
 	/** Called when need to notification of updated morse message to activity */
-	public void notifyMorseUpdates(final String morse) {
+	public void notifyMorseUpdates(String morse) {
 		Handler handler = getClientHandler();
 
 		if (handler != null) {
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(new Runnable() {
-				public void run() {
-					CWPControlNotification notify = getClientNotifier();
+			CWPRunnable run = newCWPRunnableFromMemoryPool(morse);
 
-					if (notify != null)
-						notify.morseUpdated(morse);
-				}
-			});
+			/* Might be called from IO-thread, need to dispatch to UI thread */
+			if (!handler.post(run))
+				pushToMemoryPool(run);
 		}
 	}
 
 	/** Called when sending morse message completes */
-	public void notifyMorseMessageSendingState(final boolean complete,
-			final String sendMorse) {
+	public void notifyMorseMessageSendingState(boolean complete,
+			String sendMorse) {
 		Handler handler = getClientHandler();
 
 		if (handler != null) {
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(new Runnable() {
-				public void run() {
-					CWPControlNotification notify = getClientNotifier();
+			CWPRunnable run = newCWPRunnableFromMemoryPool(complete, sendMorse);
 
-					if (notify != null)
-						notify.morseMessageSendingState(complete, sendMorse);
-				}
-			});
+			/* Might be called from IO-thread, need to dispatch to UI thread */
+			if (!handler.post(run))
+				pushToMemoryPool(run);
 		}
 	}
 
 	/** Called when received frequency change message */
-	public void notifyFrequencyChange(final long freq) {
+	public void notifyFrequencyChange(long freq) {
 		Handler handler = getClientHandler();
 
 		if (handler != null) {
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(new Runnable() {
-				public void run() {
-					CWPControlNotification notify = getClientNotifier();
+			CWPRunnable run = newCWPRunnableFromMemoryPool(freq);
 
-					if (notify != null)
-						notify.frequencyChange(freq);
-				}
-			});
+			/* Might be called from IO-thread, need to dispatch to UI thread */
+			if (!handler.post(run))
+				pushToMemoryPool(run);
 		}
 	}
 

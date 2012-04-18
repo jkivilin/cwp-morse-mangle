@@ -396,7 +396,7 @@ public class CWPControlThread extends Thread {
 			}
 
 			/* Push unused value to memory pool */
-			if (freeQueue.size() < 16)
+			if (freeQueue.size() < 16);
 				queuePush(freeQueue, value.clear());
 		}
 	}
@@ -728,6 +728,9 @@ public class CWPControlThread extends Thread {
 	private static CWPThreadValue queuePop(ArrayDeque<CWPThreadValue> queue) {
 		try {
 			synchronized (queue) {
+				if (queue.size() == 0)
+					return null;
+
 				return queue.pop();
 			}
 		} catch (NoSuchElementException NSEE) {

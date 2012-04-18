@@ -127,7 +127,7 @@ public class CWInputQueue {
 	private final ArrayDeque<CWave> freeQueue = new ArrayDeque<CWave>();
 
 	/* Memory pool allocator for CWave */
-	private CWave popFromMemPool() {
+	private CWave popFromMemoryPool() {
 		if (freeQueue.size() == 0)
 			return new CWave();
 
@@ -150,12 +150,11 @@ public class CWInputQueue {
 
 	/* CWave allocator from mem-pool */
 	public CWave newFromMemPoolCWave(byte type, int duration) {
-		CWave wave = popFromMemPool();
+		CWave wave = popFromMemoryPool();
 
 		wave.type = type;
 		wave.duration = duration;
 
 		return wave;
 	}
-
 }

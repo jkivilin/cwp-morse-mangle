@@ -483,6 +483,8 @@ public class MainActivity extends Activity {
 		lampImageRed = null;
 		lampImageGray = null;
 		lampImageGreen = null;
+
+		System.gc();
 	}
 
 	@Override
