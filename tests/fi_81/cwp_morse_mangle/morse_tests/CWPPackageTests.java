@@ -1,8 +1,9 @@
 package fi_81.cwp_morse_mangle.morse_tests;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.regex.Matcher;
 
 import junit.framework.TestCase;
@@ -27,11 +28,14 @@ public class CWPPackageTests extends TestCase {
 
 	@Test
 	public void test1_CWStateChangeVectorFromMorseCode() {
-		List<CWStateChange> states;
+		ArrayDeque<CWStateChange> queue = new ArrayDeque<CWStateChange>();
+		ArrayList<CWStateChange> states;
 
 		CWStateChangeQueueFromMorseCode.setSignalWidth(1);
 
-		states = CWStateChangeQueueFromMorseCode.encode(new BitString("10111"));
+		CWStateChangeQueueFromMorseCode.encode(queue, new BitString("10111"));
+		states = new ArrayList<CWStateChange>(queue);
+		queue.clear();
 		assertTrue(states != null);
 		assertEquals(4, states.size());
 		assertEquals(CWStateChange.TYPE_DOWN_TO_UP, states.get(0).getType());
@@ -45,7 +49,9 @@ public class CWPPackageTests extends TestCase {
 
 		CWStateChangeQueueFromMorseCode.setSignalWidth(2);
 
-		states = CWStateChangeQueueFromMorseCode.encode(new BitString("010"));
+		CWStateChangeQueueFromMorseCode.encode(queue, new BitString("010"));
+		states = new ArrayList<CWStateChange>(queue);
+		queue.clear();
 		assertTrue(states != null);
 		assertEquals(2, states.size());
 		assertEquals(CWStateChange.TYPE_DOWN_TO_UP, states.get(0).getType());
@@ -53,8 +59,10 @@ public class CWPPackageTests extends TestCase {
 		assertEquals(2, states.get(0).getValue());
 		assertEquals(2, states.get(1).getValue());
 
-		states = CWStateChangeQueueFromMorseCode.encode(new BitString(
+		CWStateChangeQueueFromMorseCode.encode(queue, new BitString(
 				"11111000001"));
+		states = new ArrayList<CWStateChange>(queue);
+		queue.clear();
 		assertTrue(states != null);
 		assertEquals(4, states.size());
 		assertEquals(CWStateChange.TYPE_DOWN_TO_UP, states.get(0).getType());
@@ -70,6 +78,7 @@ public class CWPPackageTests extends TestCase {
 	@Test
 	public void test2_CWInputQueue() {
 		CWInputQueue cwiq;
+		ArrayList<CWave> arlist;
 
 		/* test create */
 		cwiq = new CWInputQueue();
@@ -94,7 +103,7 @@ public class CWPPackageTests extends TestCase {
 		assertEquals(cwiq.queueLength(), 1);
 		assertFalse(cwiq.isQueueReadReady());
 		assertEquals(0,
-				cwiq.getQueue().get(0)
+				cwiq.getQueue().peek()
 						.compareTo(new CWave(CWave.TYPE_DOWN, 10)));
 
 		/* push wrong up state */
@@ -107,28 +116,24 @@ public class CWPPackageTests extends TestCase {
 
 		/* push correct down state */
 		cwiq.pushStateDown(1);
+		arlist = new ArrayList<CWave>(cwiq.getQueue());
 		assertEquals(CWave.TYPE_DOWN, cwiq.getCurrentState());
 		assertEquals(cwiq.getCurrentStateTimestamp(), 11);
 		assertEquals(cwiq.queueLength(), 2);
 		assertTrue(cwiq.isQueueReadReady());
-		assertEquals(0,
-				cwiq.getQueue().get(0)
-						.compareTo(new CWave(CWave.TYPE_DOWN, 10)));
-		assertEquals(0,
-				cwiq.getQueue().get(1).compareTo(new CWave(CWave.TYPE_UP, 1)));
+		assertEquals(0, arlist.get(0).compareTo(new CWave(CWave.TYPE_DOWN, 10)));
+		assertEquals(0, arlist.get(1).compareTo(new CWave(CWave.TYPE_UP, 1)));
 
 		/* pushing up-wave of length 0xffff */
 		cwiq.pushStateUp(cwiq.getCurrentStateTimestamp() + 1);
 		cwiq.pushStateDown(0xffff);
+		arlist = new ArrayList<CWave>(cwiq.getQueue());
 		assertEquals(cwiq.getCurrentStateTimestamp(), 12 + 0xffff);
 		assertEquals(cwiq.queueLength(), 4);
 		assertTrue(cwiq.isQueueReadReady());
+		assertEquals(0, arlist.get(2).compareTo(new CWave(CWave.TYPE_DOWN, 1)));
 		assertEquals(0,
-				cwiq.getQueue().get(2).compareTo(new CWave(CWave.TYPE_DOWN, 1)));
-		assertEquals(
-				0,
-				cwiq.getQueue().get(3)
-						.compareTo(new CWave(CWave.TYPE_UP, 0xffff)));
+				arlist.get(3).compareTo(new CWave(CWave.TYPE_UP, 0xffff)));
 
 		/* handling of special case of Up-wave longer than 0xffff */
 		cwiq = new CWInputQueue();
@@ -136,15 +141,13 @@ public class CWPPackageTests extends TestCase {
 		cwiq.pushStateDown(0xffff);
 		cwiq.pushStateUp(cwiq.getCurrentStateTimestamp());
 		cwiq.pushStateDown(1);
+		arlist = new ArrayList<CWave>(cwiq.getQueue());
 		assertTrue(cwiq.isQueueReadReady());
 		assertEquals(cwiq.getCurrentStateTimestamp(), 1 + 0xffff + 1);
 		assertEquals(cwiq.queueLength(), 2);
+		assertEquals(0, arlist.get(0).compareTo(new CWave(CWave.TYPE_DOWN, 1)));
 		assertEquals(0,
-				cwiq.getQueue().get(0).compareTo(new CWave(CWave.TYPE_DOWN, 1)));
-		assertEquals(
-				0,
-				cwiq.getQueue().get(1)
-						.compareTo(new CWave(CWave.TYPE_UP, 0x10000)));
+				arlist.get(1).compareTo(new CWave(CWave.TYPE_UP, 0x10000)));
 	}
 
 	private static byte b(int i) {

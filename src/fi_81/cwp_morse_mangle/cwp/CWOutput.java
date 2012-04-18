@@ -2,7 +2,7 @@ package fi_81.cwp_morse_mangle.cwp;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 
 import fi_81.cwp_morse_mangle.morse.BitString;
 
@@ -22,8 +22,8 @@ public class CWOutput {
 		}
 	}
 
+	private final ArrayDeque<CWStateChange> queue = new ArrayDeque<CWStateChange>();
 	private ByteBuffer outBuf;
-	private ArrayList<CWStateChange> queue;
 	private long startTime;
 
 	private boolean inManualUp;
@@ -35,7 +35,6 @@ public class CWOutput {
 	}
 
 	public CWOutput(ByteBuffer bb, long connectionStartTime) {
-		queue = new ArrayList<CWStateChange>();
 		startTime = connectionStartTime;
 		inManualUp = false;
 		manualUpStartTime = 0;
@@ -62,7 +61,7 @@ public class CWOutput {
 
 		long currentTime = System.currentTimeMillis();
 		long timeSinceConnCreation = currentTime - startTime;
-		long timeToNext = queue.get(0).getOutTime() - timeSinceConnCreation;
+		long timeToNext = queue.peek().getOutTime() - timeSinceConnCreation;
 
 		if (timeToNext < 0)
 			return Long.MAX_VALUE;
@@ -81,7 +80,7 @@ public class CWOutput {
 		long currentTime = System.currentTimeMillis();
 		long timeSinceConnCreation = currentTime - startTime;
 
-		if (queue.get(0).getOutTime() <= timeSinceConnCreation)
+		if (queue.peek().getOutTime() <= timeSinceConnCreation)
 			return true;
 
 		return false;
@@ -99,7 +98,7 @@ public class CWOutput {
 		if (!queue.isEmpty() || inManualUp)
 			return false;
 
-		queue = CWStateChangeQueueFromMorseCode.encode(morseCode);
+		CWStateChangeQueueFromMorseCode.encode(queue, morseCode);
 
 		/* adjust timestamps based on time since connection was created */
 		long currentTime = System.currentTimeMillis();
@@ -198,7 +197,7 @@ public class CWOutput {
 
 		while (isTimeToSend()) {
 			/* Get first state-change from queue */
-			CWStateChange stateToSend = queue.get(0);
+			CWStateChange stateToSend = queue.peek();
 
 			if (!stateToSend.writeToBuffer(outBuf)) {
 				/* Could not fit state-change to outBuf */
@@ -206,7 +205,7 @@ public class CWOutput {
 			}
 
 			/* state-change queued for transmit, remove from queue */
-			queue.remove(0);
+			queue.remove();
 
 			switch (stateToSend.getType()) {
 			case CWStateChange.TYPE_DOWN_TO_UP:

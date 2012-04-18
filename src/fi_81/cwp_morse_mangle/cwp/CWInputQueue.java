@@ -1,22 +1,20 @@
 package fi_81.cwp_morse_mangle.cwp;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 
 import fi_81.cwp_morse_mangle.cwp.CWave;
 
 public class CWInputQueue {
+	private final ArrayDeque<CWave> waveQueue = new ArrayDeque<CWave>();
 	private byte previousType;
 	private int previousTimestamp;
 	private boolean mergeLastUpWave;
-	private ArrayList<CWave> waveQueue;
 
 	public CWInputQueue() {
 		/* New connection starts with state down and timestamp zero */
 		previousType = CWave.TYPE_DOWN;
 		previousTimestamp = 0;
 		mergeLastUpWave = false;
-
-		waveQueue = new ArrayList<CWave>();
 	}
 
 	public byte getCurrentState() {
@@ -61,7 +59,7 @@ public class CWInputQueue {
 
 			mergeLastUpWave = false;
 
-			CWave lastWave = waveQueue.get(waveQueue.size() - 1);
+			CWave lastWave = waveQueue.peekLast();
 
 			lastWave.duration += duration;
 			previousTimestamp += duration;
@@ -86,7 +84,7 @@ public class CWInputQueue {
 		return waveQueue.size();
 	}
 
-	public ArrayList<CWave> getQueue() {
+	public ArrayDeque<CWave> getQueue() {
 		return waveQueue;
 	}
 
@@ -112,7 +110,7 @@ public class CWInputQueue {
 
 	public void completeWavesFromBegining(int beginingLen) {
 		while (beginingLen-- > 0)
-			waveQueue.remove(0);
+			waveQueue.remove();
 	}
 
 	public void completeAllWaves(int i) {
