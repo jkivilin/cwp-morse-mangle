@@ -27,6 +27,7 @@ public class CWInput {
 		}
 	}
 
+	private long currFreq = 1;
 	private ByteBuffer inBuf;
 	private CWInputQueue queue;
 	private final CWaveQueueToMorseCode morseDecoder = new CWaveQueueToMorseCode();
@@ -54,6 +55,13 @@ public class CWInput {
 
 	public ByteBuffer getInBuffer() {
 		return inBuf;
+	}
+
+	public void flushStaleMorseBits(CWInputNotification notify, boolean force) {
+		/* Flush morse buffer, either by force or by timeout */
+		BitString morseBits = morseDecoder.flushStalled(force);
+		if (morseBits != null)
+			notify.morseMessage(morseBits);
 	}
 
 	public void processInput(CWInputNotification notify) {
@@ -100,9 +108,7 @@ public class CWInput {
 		/*
 		 * Let morseDecoder to flush too old stale morse bits
 		 */
-		morseBits = morseDecoder.flushStalled();
-		if (morseBits != null)
-			notify.morseMessage(morseBits);
+		flushStaleMorseBits(notify, false);
 
 		inBuf.compact();
 	}
@@ -114,10 +120,18 @@ public class CWInput {
 
 		/* Negative value means frequency-change. */
 		if (value < 0) {
+			long newFreq = -(long) value;
 			/*
 			 * Frequency value is negated, so de-negate before passing
 			 */
-			notify.frequencyChange(-(long) value);
+			notify.frequencyChange(newFreq);
+
+			if (newFreq != currFreq) {
+				/* Force flush morse buffer since channel changed */
+				flushStaleMorseBits(notify, true);
+
+				currFreq = newFreq;
+			}
 		} else {
 			queue.pushStateUp(value);
 			notify.stateChange(CWave.TYPE_UP, value);

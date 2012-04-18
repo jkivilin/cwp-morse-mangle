@@ -89,6 +89,11 @@ public class CWPControlThread extends Thread {
 	private void resetServerConnection() {
 		EventLog.d(TAG, "resetServerConnection()");
 
+		/* flush pending morse */
+		if (cwpIn != null)
+			cwpIn.flushStaleMorseBits(inputNotify, true);
+
+		/* cancel selection-key registration */
 		if (connSelKey != null) {
 			connSelKey.cancel();
 			connSelKey = null;
@@ -545,8 +550,6 @@ public class CWPControlThread extends Thread {
 
 		public void frequencyChange(long newFreq) {
 			EventLog.d(TAG, "freq-change: %d", newFreq);
-
-			/* TODO: force/clear flush morse queue at freq change (in CWInput) */
 
 			/* Clear pending morse message */
 			handleReceivedMorseMessageBuffer();

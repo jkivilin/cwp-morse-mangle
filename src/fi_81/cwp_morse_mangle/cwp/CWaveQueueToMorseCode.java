@@ -266,18 +266,23 @@ public class CWaveQueueToMorseCode {
 		return morseCode;
 	}
 
-	public BitString flushStalled() {
-		if (morseBits.length() == 0 || lastPendingWaveTime == 0)
+	public BitString flushStalled(boolean forceFlush) {
+		if (morseBits.length() == 0)
 			return null;
 
-		long currTime = System.currentTimeMillis();
-
-		/* Check if currently stored bits are resent enough to keep */
-		if (lastPendingWaveTime
-				+ (long) (MORSE_WORDBREAK_WIDTH * adaptionWidth) >= currTime) {
-			/* If received code is still short, return */
-			if (morseBits.length() <= MorseCharList.longestMorseBits)
+		if (!forceFlush) {
+			if (lastPendingWaveTime == 0)
 				return null;
+
+			long currTime = System.currentTimeMillis();
+
+			/* Check if currently stored bits are resent enough to keep */
+			if (lastPendingWaveTime
+					+ (long) (MORSE_WORDBREAK_WIDTH * adaptionWidth) >= currTime) {
+				/* If received code is still short, return */
+				if (morseBits.length() <= MorseCharList.longestMorseBits)
+					return null;
+			}
 		}
 
 		/* morseBits contain old data that needs to be flushed */
