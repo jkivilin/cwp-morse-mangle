@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 
 import fi_81.cwp_morse_mangle.cwp.CWInputQueue;
 import fi_81.cwp_morse_mangle.morse.BitString;
+import fi_81.cwp_morse_mangle.morse.MorseCodec;
 
 public class CWInput {
 	/* Callbacks from input, frequency change, state changes and morse messages */
@@ -105,7 +106,12 @@ public class CWInput {
 		/*
 		 * Let morseDecoder to flush too old stale morse bits
 		 */
-		boolean forceFlush = timeToNextWork() == 0;
+		boolean forceFlush = false;
+
+		if (queue.getQueue().size() > MorseCodec.endSequence.length())
+			forceFlush = true;
+		else if (timeToNextWork() == 0)
+			forceFlush = true;
 
 		flushStaleMorseBits(notify, forceFlush);
 		if (forceFlush)
