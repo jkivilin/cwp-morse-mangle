@@ -12,6 +12,9 @@ public class MorseCharList {
 	private final static MorseChar characters[] = fillInMorseCharacters();
 	private static char allowedMorseChars[];
 
+	/* Longest length of morse code (excluding out internal SPECIAL_STOP_MESSAGE) */
+	public static int longestMorseBits;
+
 	private static MorseChar[] fillInMorseCharacters() {
 		final String morseData =
 			/* Special, implementation spesific morse code, do not use for transmitting! */
@@ -114,6 +117,7 @@ public class MorseCharList {
 			offset += dataStrings[i].length();
 		}
 
+		longestMorseBits = 0;
 		for (int i = 0, len = codeOffsets.length; i < len; i++) {
 			int nextOffset = (i + 1 < len) ? codeOffsets[i + 1] : gatheredCodes
 					.length();
@@ -125,6 +129,10 @@ public class MorseCharList {
 			/* Gather allowed characters, skip upper-case special characters */
 			if (!Character.isUpperCase(ch) && ch != SPECIAL_STOP_MESSAGE)
 				allowed.append(ch);
+
+			/* Get length of longest message that we can receive */
+			if (ch != SPECIAL_STOP_MESSAGE && bs.length() > longestMorseBits)
+				longestMorseBits = bs.length();
 		}
 
 		allowedMorseChars = allowed.toString().toCharArray();

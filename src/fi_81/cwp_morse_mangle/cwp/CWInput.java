@@ -29,10 +29,9 @@ public class CWInput {
 
 	private ByteBuffer inBuf;
 	private CWInputQueue queue;
-	private CWaveQueueToMorseCode morseDecoder;
+	private final CWaveQueueToMorseCode morseDecoder = new CWaveQueueToMorseCode();
 
 	public CWInput(CWInputQueue queue, ByteBuffer bb) {
-		this.morseDecoder = new CWaveQueueToMorseCode();
 		this.queue = queue;
 
 		if (bb == null) {
@@ -137,5 +136,9 @@ public class CWInput {
 		/* At up state, so this must be state-change:down */
 		queue.pushStateDown(value);
 		notify.stateChange(CWave.TYPE_DOWN, value);
+	}
+
+	public boolean hadPendingBits() {
+		return morseDecoder.hadPendingBits();
 	}
 }

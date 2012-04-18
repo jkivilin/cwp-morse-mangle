@@ -274,8 +274,11 @@ public class CWaveQueueToMorseCode {
 
 		/* Check if currently stored bits are resent enough to keep */
 		if (lastPendingWaveTime
-				+ (long) (MORSE_WORDBREAK_WIDTH * adaptionWidth) >= currTime)
-			return null;
+				+ (long) (MORSE_WORDBREAK_WIDTH * adaptionWidth) >= currTime) {
+			/* If received code is still short, return */
+			if (morseBits.length() <= MorseCharList.longestMorseBits)
+				return null;
+		}
 
 		/* morseBits contain old data that needs to be flushed */
 		morseBits = morseBits.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
@@ -542,5 +545,12 @@ public class CWaveQueueToMorseCode {
 		int totalOkCount = shortOkCount + longOkCount + wordbreakOkCount;
 
 		return totalOkCount > 0 && shortOkCount > 0;
+	}
+
+	public boolean hadPendingBits() {
+		if (morseBits == null)
+			return false;
+
+		return (morseBits.length() > 0);
 	}
 }

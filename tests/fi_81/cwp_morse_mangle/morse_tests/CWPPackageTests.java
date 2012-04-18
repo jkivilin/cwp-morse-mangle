@@ -15,6 +15,7 @@ import fi_81.cwp_morse_mangle.cwp.CWInput;
 import fi_81.cwp_morse_mangle.cwp.CWInput.CWInputNotification;
 import fi_81.cwp_morse_mangle.cwp.CWInputQueue;
 import fi_81.cwp_morse_mangle.cwp.CWOutput;
+import fi_81.cwp_morse_mangle.cwp.CWOutput.CWOutputNotification;
 import fi_81.cwp_morse_mangle.cwp.CWStateChange;
 import fi_81.cwp_morse_mangle.cwp.CWStateChangeQueueFromMorseCode;
 import fi_81.cwp_morse_mangle.cwp.CWave;
@@ -350,6 +351,141 @@ public class CWPPackageTests extends TestCase {
 		assertEquals(4, bb.getShort());
 	}
 
+	private void privateTestCWBits(BitString bitsSend, int width,
+			int delayStart, int checkType, String checkStr) {
+		byte array[];
+		ByteBuffer bb;
+		CWOutput cwo;
+		CWInput cwi;
+
+		CWStateChangeQueueFromMorseCode.setSignalWidth(width);
+
+		/* emulate delayed start by modifying connection start time to past */
+		cwo = new CWOutput(System.currentTimeMillis() - delayStart);
+		assertTrue(cwo != null);
+
+		array = new byte[0];
+		try {
+			CWOutputNotification notify = cwo.new CWOutputNotificationNone();
+
+			cwo.sendMorseCode(bitsSend);
+			Thread.sleep(bitsSend.length() * width + 31);
+			bb = cwo.getOutputBuffer();
+			while (cwo.processOutput(notify) || bb.position() > 0) {
+				byte narray[] = new byte[array.length + bb.remaining()];
+				System.arraycopy(array, 0, narray, 0, array.length);
+				bb.get(narray, array.length, bb.remaining());
+				array = narray;
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		cwi = new CWInput(ByteBuffer.wrap(array));
+		assertTrue(cwi != null);
+
+		final LinkedList<Integer> state_change_count = new LinkedList<Integer>();
+		final LinkedList<BitString> morseCode = new LinkedList<BitString>();
+		morseCode.add(new BitString());
+
+		final CWInputNotification notify = new CWInputNotification() {
+			@Override
+			public void frequencyChange(long newFreq) {
+			}
+
+			@Override
+			public void stateChange(byte newState, int value) {
+				if (state_change_count.size() == 0)
+					state_change_count.add(1);
+				else
+					state_change_count.set(0, state_change_count.get(0)
+							.intValue() + 1);
+			}
+
+			@Override
+			public void morseMessage(BitString morseBits) {
+				System.out.println(morseBits);
+				System.out.println(MorseCodec.decodeMorseToMessage(morseBits));
+				morseCode.set(0, morseCode.get(0).append(morseBits));
+
+				if (morseCode.get(0).endWith(MorseCodec.endSequence))
+					morseCode.set(0,
+							morseCode.get(0).append(BitString.newZeros(3)));
+			}
+		};
+
+		try {
+			int waitTime = (bitsSend.length() + 10) * width;
+
+			for (int i = 0; i < waitTime + 20; i += 10) {
+				Thread.sleep(10);
+
+				cwi.processInput(notify);
+			}
+
+			cwi.processInput(notify);
+		} catch (Exception e) {
+			fail(e.toString());
+		}
+
+		String messageReceived = MorseCodec.decodeMorseToMessage(morseCode
+				.get(0));
+
+		Log.d(TAG, morseCode.get(0).toString());
+		Log.d(TAG, MorseCodec.decodeMorseToMessage(morseCode.get(0)));
+
+		messageReceived = messageReceived.replaceAll(
+				Matcher.quoteReplacement(" ©"), "©").trim();
+		messageReceived = messageReceived.replaceAll(
+				Matcher.quoteReplacement("© "), "©").trim();
+		messageReceived = messageReceived.replaceAll(
+				Matcher.quoteReplacement("©"), "").trim();
+
+		switch (checkType) {
+		case 0: /* match string */
+			assertEquals(messageReceived, checkStr);
+			break;
+		case 1: /* 'e' or 'Z' */
+			assertTrue(messageReceived.length() > 0 || !cwi.hadPendingBits());
+			for (char ch : messageReceived.toCharArray()) {
+				assertTrue(ch == 'e' || ch == 'Z');
+			}
+			break;
+		default:
+			assertTrue(false);
+			break;
+		}
+	}
+
+	@Test
+	public void test5_CWOutputToCWInput_BitString() {
+		BitString bits;
+
+		/* Simple test should just work */
+		bits = MorseCodec.encodeMessageToMorse("StestC");
+		privateTestCWBits(bits, 5, 0, 0, "StestC");
+
+		/* Decoding with leading zeros must work */
+		bits = BitString.newZeros(64);
+		bits = bits.append(MorseCodec.encodeMessageToMorse("StestC"));
+		privateTestCWBits(bits, 4, 0, 0, "StestC");
+
+		/*
+		 * large/unknown bit sequence should output something (preferably "e"s
+		 * or "Z"s) instead of buffering
+		 */
+		bits = new BitString(
+				"101010101010101010101010101010101010101010101010101010101010101010101010101010101010101");
+		privateTestCWBits(bits, 3, 0, 1, null);
+
+		/* message after unknown bits */
+		bits = new BitString(
+				"10101010101010101010101010101010101010101010101010101010101010101010101010101010101010100000000000"
+						+ "111111001100111111001100111111000000110011001100111111001100111111000000000000000"
+						+ "10101011101110111010101");
+		privateTestCWBits(bits, 2, 0, 0, "ZSCX");
+	}
+
 	private void privateTestCWMorse(String[] messagesToSend, int widths[]) {
 		byte array[];
 		ByteBuffer bb;
@@ -362,6 +498,7 @@ public class CWPPackageTests extends TestCase {
 		cwo = new CWOutput(System.currentTimeMillis());
 		assertTrue(cwo != null);
 
+		CWOutputNotification notify = cwo.new CWOutputNotificationNone();
 		array = new byte[0];
 		for (int i = 0, len = messagesToSend.length; i < len; i++) {
 			CWStateChangeQueueFromMorseCode.setSignalWidth(widths[i]);
@@ -371,8 +508,7 @@ public class CWPPackageTests extends TestCase {
 				cwo.sendMorseCode(sentMorse[i]);
 				Thread.sleep(sentMorse[i].length() * widths[i] + 31);
 				bb = cwo.getOutputBuffer();
-				while (cwo.processOutput(cwo.new CWOutputNotificationNone())
-						|| bb.position() > 0) {
+				while (cwo.processOutput(notify) || bb.position() > 0) {
 					byte narray[] = new byte[array.length + bb.remaining()];
 					System.arraycopy(array, 0, narray, 0, array.length);
 					bb.get(narray, array.length, bb.remaining());
@@ -390,40 +526,39 @@ public class CWPPackageTests extends TestCase {
 		final LinkedList<BitString> morseCode = new LinkedList<BitString>();
 		morseCode.add(new BitString());
 
+		final CWInputNotification notifyIn = new CWInputNotification() {
+			@Override
+			public void frequencyChange(long newFreq) {
+			}
+
+			@Override
+			public void stateChange(byte newState, int value) {
+				if (state_change_count.size() == 0)
+					state_change_count.add(1);
+				else
+					state_change_count.set(0, state_change_count.get(0)
+							.intValue() + 1);
+			}
+
+			@Override
+			public void morseMessage(BitString morseBits) {
+				System.out.println(morseBits);
+				System.out.println(MorseCodec.decodeMorseToMessage(morseBits));
+				morseCode.set(0, morseCode.get(0).append(morseBits));
+
+				if (morseCode.get(0).endWith(MorseCodec.endSequence))
+					morseCode.set(0,
+							morseCode.get(0).append(BitString.newZeros(3)));
+			}
+		};
+
 		try {
 			int waitTime = 0;
 			for (int i = 0, len = widths.length; i < len; i++)
 				waitTime += sentMorse[i].length() * widths[i];
 
 			for (int i = 0; i < waitTime + 20; i += 10) {
-				cwi.processInput(new CWInputNotification() {
-					@Override
-					public void frequencyChange(long newFreq) {
-					}
-
-					@Override
-					public void stateChange(byte newState, int value) {
-						if (state_change_count.size() == 0)
-							state_change_count.add(1);
-						else
-							state_change_count.set(0, state_change_count.get(0)
-									.intValue() + 1);
-					}
-
-					@Override
-					public void morseMessage(BitString morseBits) {
-						System.out.println(morseBits);
-						System.out.println(MorseCodec
-								.decodeMorseToMessage(morseBits));
-						morseCode.set(0, morseCode.get(0).append(morseBits));
-
-						if (morseCode.get(0).endWith(MorseCodec.endSequence))
-							morseCode.set(
-									0,
-									morseCode.get(0).append(
-											BitString.newZeros(3)));
-					}
-				});
+				cwi.processInput(notifyIn);
 
 				Thread.sleep(10);
 			}
@@ -494,7 +629,7 @@ public class CWPPackageTests extends TestCase {
 	}
 
 	@Test
-	public void test5_CWOutputToCWInput() {
+	public void test6_CWOutputToCWInput() {
 		/* test variating signal widths */
 		CWStateChangeQueueFromMorseCode.setSignalJitter(100, 0.01);
 		privateTestCWMorse("abc", 11, "cba", 22);
@@ -535,7 +670,7 @@ public class CWPPackageTests extends TestCase {
 		privateTestCWMorse("StotC", 3, "StotC", 1);
 		privateTestCWMorse("StotC", 7, "StotC", 1);
 
-		privateTestCWMorse("abcdefghijklmopqrstuvwxyzåäö", 4,
+		privateTestCWMorse("abcdefghijklmopqrstuvwxyzåäö", 2,
 				"0123456789,?\'!/()&:;=+-_\"$@", 1);
 	}
 }
