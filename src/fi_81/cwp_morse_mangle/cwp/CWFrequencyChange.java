@@ -1,12 +1,24 @@
 package fi_81.cwp_morse_mangle.cwp;
 
 public class CWFrequencyChange extends CWStateChange {
+	public void setValues(long newFreq) {
+		/*
+		 * Register with correct type and add timestamp of 0 (making sending
+		 * logic to pass this forward immediately).
+		 */
+		setValues(CWStateChange.TYPE_FREQUENCY_CHANGE, (int) (-newFreq), 0);
+	}
+
 	public CWFrequencyChange(long newFreq) {
 		/*
 		 * Register with correct type and add timestamp of 0 (making sending
-		 * logic to pass this forward immediately.
+		 * logic to pass this forward immediately).
 		 */
 		super(CWStateChange.TYPE_FREQUENCY_CHANGE, (int) (-newFreq), 0);
+	}
+
+	public CWFrequencyChange() {
+		super();
 	}
 
 	public long getFrequency() {

@@ -135,6 +135,9 @@ public class CWPControlThread extends Thread {
 		cwpOut = null;
 
 		handleStateRequest();
+		
+		/* Perform GC at this stage */
+		System.gc();
 	}
 
 	/** Main loop of thread */

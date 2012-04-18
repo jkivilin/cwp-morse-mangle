@@ -23,6 +23,7 @@ public class CWOutput {
 	}
 
 	private final ArrayDeque<CWStateChange> queue = new ArrayDeque<CWStateChange>();
+	private final CWStateChangeQueueFromMorseCode stateChangeBuilder = new CWStateChangeQueueFromMorseCode();
 	private ByteBuffer outBuf;
 	private long startTime;
 
@@ -98,7 +99,7 @@ public class CWOutput {
 		if (!queue.isEmpty() || inManualUp)
 			return false;
 
-		CWStateChangeQueueFromMorseCode.encode(queue, morseCode);
+		stateChangeBuilder.encode(queue, morseCode);
 
 		/* adjust timestamps based on time since connection was created */
 		long currentTime = System.currentTimeMillis();
@@ -129,7 +130,7 @@ public class CWOutput {
 			return true;
 		}
 
-		queue.add(new CWFrequencyChange(newFreq));
+		queue.add(stateChangeBuilder.newFromMemPoolCWFrequencyChange(newFreq));
 		delayedFreq = -1;
 
 		return true;
@@ -157,7 +158,8 @@ public class CWOutput {
 			long timestamp = currentTime - startTime;
 			int upStateDuration = (int) (currentTime - manualUpStartTime);
 
-			queue.add(new CWStateChange(stateChange, upStateDuration, timestamp));
+			queue.add(stateChangeBuilder.newFromMemPoolCWStateChange(
+					stateChange, upStateDuration, timestamp));
 
 			inManualUp = false;
 			sendFrequenceChange(delayedFreq);
@@ -173,7 +175,8 @@ public class CWOutput {
 			manualUpStartTime = System.currentTimeMillis();
 			long timestamp = manualUpStartTime - startTime;
 
-			queue.add(new CWStateChange(stateChange, (int) timestamp, timestamp));
+			queue.add(stateChangeBuilder.newFromMemPoolCWStateChange(
+					stateChange, (int) timestamp, timestamp));
 
 			inManualUp = true;
 			return true;
@@ -204,9 +207,6 @@ public class CWOutput {
 				break;
 			}
 
-			/* state-change queued for transmit, remove from queue */
-			queue.remove();
-
 			switch (stateToSend.getType()) {
 			case CWStateChange.TYPE_DOWN_TO_UP:
 				notify.stateChange(CWave.TYPE_UP, stateToSend.getValue());
@@ -220,6 +220,12 @@ public class CWOutput {
 				break;
 			}
 
+			/*
+			 * state-change queued for transmit, remove from transmit-queue to
+			 * free-queue
+			 */
+			stateChangeBuilder.pushToMemPool(queue.remove());
+
 			addedToBuffer = true;
 		}
 
@@ -231,6 +237,7 @@ public class CWOutput {
 	public int queueSize() {
 		if (queue != null)
 			return queue.size();
+
 		return 0;
 	}
 }

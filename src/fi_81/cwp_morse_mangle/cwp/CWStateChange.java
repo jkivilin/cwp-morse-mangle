@@ -13,10 +13,22 @@ public class CWStateChange {
 	/* time since creation of connection when to send this message */
 	private long outTime;
 
-	public CWStateChange(byte type, int timestampOrDuration, long outTime) {
+	public void setValues(byte type, int timestampOrDuration, long outTime) {
 		this.type = type;
 		this.value = timestampOrDuration;
 		this.outTime = outTime;
+	}
+
+	public CWStateChange(byte type, int timestampOrDuration, long outTime) {
+		setValues(type, timestampOrDuration, outTime);
+	}
+
+	public void clear() {
+		setValues((byte) 0, 0, 0);
+	}
+
+	public CWStateChange() {
+		clear();
 	}
 
 	public byte getType() {

@@ -30,10 +30,11 @@ public class CWPPackageTests extends TestCase {
 	public void test1_CWStateChangeVectorFromMorseCode() {
 		ArrayDeque<CWStateChange> queue = new ArrayDeque<CWStateChange>();
 		ArrayList<CWStateChange> states;
+		CWStateChangeQueueFromMorseCode morseToWave = new CWStateChangeQueueFromMorseCode();
 
 		CWStateChangeQueueFromMorseCode.setSignalWidth(1);
 
-		CWStateChangeQueueFromMorseCode.encode(queue, new BitString("10111"));
+		morseToWave.encode(queue, new BitString("10111"));
 		states = new ArrayList<CWStateChange>(queue);
 		queue.clear();
 		assertTrue(states != null);
@@ -49,7 +50,7 @@ public class CWPPackageTests extends TestCase {
 
 		CWStateChangeQueueFromMorseCode.setSignalWidth(2);
 
-		CWStateChangeQueueFromMorseCode.encode(queue, new BitString("010"));
+		morseToWave.encode(queue, new BitString("010"));
 		states = new ArrayList<CWStateChange>(queue);
 		queue.clear();
 		assertTrue(states != null);
@@ -59,8 +60,7 @@ public class CWPPackageTests extends TestCase {
 		assertEquals(2, states.get(0).getValue());
 		assertEquals(2, states.get(1).getValue());
 
-		CWStateChangeQueueFromMorseCode.encode(queue, new BitString(
-				"11111000001"));
+		morseToWave.encode(queue, new BitString("11111000001"));
 		states = new ArrayList<CWStateChange>(queue);
 		queue.clear();
 		assertTrue(states != null);
@@ -345,7 +345,7 @@ public class CWPPackageTests extends TestCase {
 
 		cwo.sendMorseCode(new BitString("1110101111"));
 		try {
-			Thread.sleep(10 + 10);
+			Thread.sleep(10 + 100);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
