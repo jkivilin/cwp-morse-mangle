@@ -203,7 +203,7 @@ public class MainActivity extends Activity {
 	}
 
 	/** Called when sending morse message to server */
-	private void sendMorseMessage() {
+	private void sendMorseMessage(boolean sendSOS) {
 		EventLog.d(TAG, "sendMorseMessage()");
 
 		/* Disable input, visualize spinner */
@@ -211,11 +211,10 @@ public class MainActivity extends Activity {
 
 		/* Pass morse message to CWP Service for transfer */
 		if (serviceBound) {
-			String message = morseEdit.getText().toString();
-
 			/* Handle SOS specially */
-			if (message.compareTo("SOS") == 0)
-				message = Character.toString(MorseCharList.SPECIAL_SOS);
+			String message = sendSOS ? Character
+					.toString(MorseCharList.SPECIAL_SOS) : morseEdit.getText()
+					.toString();
 
 			cwpService.sendMorseMessage(message);
 		} else {
@@ -329,7 +328,7 @@ public class MainActivity extends Activity {
 		/* send message when button is pressed */
 		morseButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				sendMorseMessage();
+				sendMorseMessage(false);
 			}
 		});
 
@@ -577,8 +576,7 @@ public class MainActivity extends Activity {
 		case R.id.menu_send_sos:
 			/* Check if can send SOS now... */
 			if (!sendingMorseMessage) {
-				morseEdit.setText("SOS");
-				sendMorseMessage();
+				sendMorseMessage(true);
 			} else {
 				Toast.makeText(this, R.string.toast_cannot_send_sos, 2000)
 						.show();
