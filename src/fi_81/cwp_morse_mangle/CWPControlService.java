@@ -80,6 +80,9 @@ public class CWPControlService extends Service {
 	public void onCreate() {
 		EventLog.d(TAG, "onCreate()");
 
+		Debug.startMethodTracing("cwp_morse_mangle");
+		Debug.startAllocCounting();
+
 		/*
 		 * Have some initial value in profiler (CWPControlService sends initial
 		 * signals even without connection)

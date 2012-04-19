@@ -17,7 +17,6 @@ import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
-import android.os.Debug;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
@@ -258,9 +257,6 @@ public class MainActivity extends Activity {
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		Debug.startMethodTracing("cwp_morse_mangle");
-		Debug.startAllocCounting();
-
 		EventLog.d(TAG, "onCreate()");
 
 		super.onCreate(savedInstanceState);
