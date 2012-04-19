@@ -1,7 +1,6 @@
 package fi_81.cwp_morse_mangle.cwp;
 
 import java.util.ArrayDeque;
-import java.util.NoSuchElementException;
 
 import fi_81.cwp_morse_mangle.cwp.CWave;
 
@@ -78,7 +77,7 @@ public class CWInputQueue {
 	}
 
 	public void pushWave(byte type, int duration) {
-		waveQueue.add(newFromMemPoolCWave(type, duration));
+		waveQueue.add(new CWave(type, duration));
 	}
 
 	public int queueLength() {
@@ -111,50 +110,10 @@ public class CWInputQueue {
 
 	public void completeWavesFromBegining(int beginingLen) {
 		while (beginingLen-- > 0)
-			pushToMemoryPool(waveQueue.remove());
+			waveQueue.remove();
 	}
 
 	public void completeAllWaves(int i) {
-		while (waveQueue.size() > 0)
-			if (!pushToMemoryPool(waveQueue.remove()))
-				break;
-
 		waveQueue.clear();
-	}
-
-	/* Memory pool for CWave */
-	private final int CWAVE_MEMPOOL_MAX_SIZE = 128;
-	private final ArrayDeque<CWave> freeQueue = new ArrayDeque<CWave>();
-
-	/* Memory pool allocator for CWave */
-	private CWave popFromMemoryPool() {
-		if (freeQueue.size() == 0)
-			return new CWave();
-
-		try {
-			CWave wave = freeQueue.pop();
-			return wave;
-		} catch (NoSuchElementException NSEE) {
-			return new CWave();
-		}
-	}
-
-	/* Pushes unused CWave to freeQueue */
-	private boolean pushToMemoryPool(CWave unusedWave) {
-		if (freeQueue.size() >= CWAVE_MEMPOOL_MAX_SIZE)
-			return false;
-
-		freeQueue.push(unusedWave);
-		return true;
-	}
-
-	/* CWave allocator from mem-pool */
-	public CWave newFromMemPoolCWave(byte type, int duration) {
-		CWave wave = popFromMemoryPool();
-
-		wave.type = type;
-		wave.duration = duration;
-
-		return wave;
 	}
 }

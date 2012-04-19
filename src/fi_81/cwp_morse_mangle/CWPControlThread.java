@@ -37,7 +37,6 @@ public class CWPControlThread extends Thread {
 
 	/* ArrayDeque used for passing data to IO-thread */
 	private final ArrayDeque<CWPThreadValue> msgQueue = new ArrayDeque<CWPThreadValue>();
-	private final ArrayDeque<CWPThreadValue> freeQueue = new ArrayDeque<CWPThreadValue>();
 
 	/* Selector for blocking on non-blocking sockets */
 	private Selector selector;
@@ -398,11 +397,6 @@ public class CWPControlThread extends Thread {
 				cwpService.notifyMorseUpdates("");
 				break;
 			}
-
-			/* Push unused value to memory pool */
-			if (freeQueue.size() < 16)
-				;
-			queuePush(freeQueue, value.clear());
 		}
 	}
 
@@ -584,8 +578,7 @@ public class CWPControlThread extends Thread {
 		}
 
 		public void morseMessage(BitString morseBits) {
-			EventLog.d(TAG, "morse-message: " + morseBits.toString() + " ["
-					+ MorseCodec.decodeMorseToMessage(morseBits) + ']');
+			EventLog.d(TAG, "morse-message: " + morseBits.toString());
 
 			/* Gather all message bits */
 			if (morseMessageBits != null)
@@ -674,7 +667,7 @@ public class CWPControlThread extends Thread {
 	public void setNewConfiguration(String hostName, int hostPort,
 			int morseSpeed) {
 		/* Push new configuration as message to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildConfiguration(this, hostName,
+		queuePush(msgQueue, CWPThreadValue.buildConfiguration(hostName,
 				hostPort, morseSpeed));
 
 		/* signal IO-thread of new message */
@@ -684,7 +677,7 @@ public class CWPControlThread extends Thread {
 	/** Set new frequency */
 	public void setFrequency(long freq) {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildFreqChange(this, freq));
+		queuePush(msgQueue, CWPThreadValue.buildFreqChange(freq));
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -693,7 +686,7 @@ public class CWPControlThread extends Thread {
 	/** Set sending state */
 	public void setSendingState(boolean setUpState) {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildStateChange(this, setUpState));
+		queuePush(msgQueue, CWPThreadValue.buildStateChange(setUpState));
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -702,7 +695,7 @@ public class CWPControlThread extends Thread {
 	/** Set to send morse message */
 	public void sendMorseMessage(String morse) {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(this, morse));
+		queuePush(msgQueue, CWPThreadValue.buildMorseMessage(morse));
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -711,7 +704,7 @@ public class CWPControlThread extends Thread {
 	/** Request current state from IO-thread */
 	public void requestCurrentState() {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildStateRequest(this));
+		queuePush(msgQueue, CWPThreadValue.buildStateRequest());
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -720,7 +713,7 @@ public class CWPControlThread extends Thread {
 	/** Request to clear received morse messages */
 	public void requestClearMessages() {
 		/* Push new frequency to IO-thread */
-		queuePush(msgQueue, CWPThreadValue.buildClearMessages(this));
+		queuePush(msgQueue, CWPThreadValue.buildClearMessages());
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -747,18 +740,6 @@ public class CWPControlThread extends Thread {
 		}
 	}
 
-	/**
-	 * Returns CWPThreadValue object from memory pool or if pool is empty,
-	 * allocates new
-	 */
-	private CWPThreadValue getCWPThreadValue() {
-		CWPThreadValue value = queuePop(freeQueue);
-		if (value == null)
-			return new CWPThreadValue();
-
-		return value;
-	}
-
 	/** Class for passing messages from UI-thread to IO-thread */
 	private static class CWPThreadValue {
 		protected static final int TYPE_CONFIGURATION = 0;
@@ -773,10 +754,9 @@ public class CWPControlThread extends Thread {
 		protected int argInt0;
 		protected Object argObj0;
 
-		protected static CWPThreadValue buildConfiguration(
-				CWPControlThread parent, String hostName, int hostPort,
-				int morseSpeed) {
-			CWPThreadValue value = parent.getCWPThreadValue();
+		protected static CWPThreadValue buildConfiguration(String hostName,
+				int hostPort, int morseSpeed) {
+			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_CONFIGURATION;
 			value.argObj0 = hostName;
@@ -786,9 +766,8 @@ public class CWPControlThread extends Thread {
 			return value;
 		}
 
-		protected static CWPThreadValue buildStateChange(
-				CWPControlThread parent, boolean isStateUp) {
-			CWPThreadValue value = parent.getCWPThreadValue();
+		protected static CWPThreadValue buildStateChange(boolean isStateUp) {
+			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_STATE_CHANGE;
 			value.argObj0 = null;
@@ -798,9 +777,8 @@ public class CWPControlThread extends Thread {
 			return value;
 		}
 
-		protected static CWPThreadValue buildFreqChange(
-				CWPControlThread parent, long freq) {
-			CWPThreadValue value = parent.getCWPThreadValue();
+		protected static CWPThreadValue buildFreqChange(long freq) {
+			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_FREQ_CHANGE;
 			value.argObj0 = null;
@@ -810,9 +788,8 @@ public class CWPControlThread extends Thread {
 			return value;
 		}
 
-		protected static CWPThreadValue buildMorseMessage(
-				CWPControlThread parent, String morse) {
-			CWPThreadValue value = parent.getCWPThreadValue();
+		protected static CWPThreadValue buildMorseMessage(String morse) {
+			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_MORSE_MESSAGE;
 			value.argObj0 = morse;
@@ -822,9 +799,8 @@ public class CWPControlThread extends Thread {
 			return value;
 		}
 
-		protected static CWPThreadValue buildStateRequest(
-				CWPControlThread parent) {
-			CWPThreadValue value = parent.getCWPThreadValue();
+		protected static CWPThreadValue buildStateRequest() {
+			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_STATE_REQUEST;
 			value.argObj0 = null;
@@ -834,9 +810,8 @@ public class CWPControlThread extends Thread {
 			return value;
 		}
 
-		protected static CWPThreadValue buildClearMessages(
-				CWPControlThread parent) {
-			CWPThreadValue value = parent.getCWPThreadValue();
+		protected static CWPThreadValue buildClearMessages() {
+			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_CLEAR_MESSAGES;
 			value.argObj0 = null;
@@ -844,16 +819,6 @@ public class CWPControlThread extends Thread {
 			value.argInt0 = 0;
 
 			return value;
-		}
-
-		/** Clear arguments */
-		protected CWPThreadValue clear() {
-			argObj0 = null;
-			argLong0 = 0;
-			argInt0 = 0;
-			type = -1;
-
-			return this;
 		}
 
 		/*

@@ -1,8 +1,6 @@
 package fi_81.cwp_morse_mangle.cwp;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.NoSuchElementException;
 
 import fi_81.cwp_morse_mangle.cwp.CWStateChange;
 import fi_81.cwp_morse_mangle.morse.BitString;
@@ -37,16 +35,16 @@ public class CWStateChangeQueueFromMorseCode {
 			if (bits.charAt(i) == '1') {
 				if (!isUp) {
 					/* State change, down to up. With timestamp. */
-					states.add(newFromMemPoolCWStateChange(
-							CWStateChange.TYPE_DOWN_TO_UP, timestamp, timestamp));
+					states.add(new CWStateChange(CWStateChange.TYPE_DOWN_TO_UP,
+							timestamp, timestamp));
 					isUp = true;
 					duration = 0;
 				}
 			} else {
 				if (isUp) {
 					/* State change, up to down. With duration */
-					states.add(newFromMemPoolCWStateChange(
-							CWStateChange.TYPE_UP_TO_DOWN, duration, timestamp));
+					states.add(new CWStateChange(CWStateChange.TYPE_UP_TO_DOWN,
+							duration, timestamp));
 					isUp = false;
 				}
 			}
@@ -65,52 +63,7 @@ public class CWStateChangeQueueFromMorseCode {
 
 		/* if left in up-state, append up-to-down state change */
 		if (isUp)
-			states.add(newFromMemPoolCWStateChange(
-					CWStateChange.TYPE_UP_TO_DOWN, duration, timestamp));
-	}
-
-	/* Memory pool for CWStateChanges */
-	private final int CWSTATE_CHANGE_MEMPOOL_MAX_SIZE = 128;
-	private final ArrayDeque<CWStateChange> freeQueue = new ArrayDeque<CWStateChange>();
-
-	/* Memory pool allocator for CWStateChanges */
-	private CWStateChange popFromMemPool() {
-		if (freeQueue.size() == 0)
-			return new CWFrequencyChange();
-
-		try {
-			CWStateChange stateChange = freeQueue.pop();
-			return stateChange;
-		} catch (NoSuchElementException NSEE) {
-			return new CWFrequencyChange();
-		}
-	}
-
-	/* Pushes unused CWStateChange back to freeQueue */
-	public boolean pushToMemPool(CWStateChange unusedStateChange) {
-		if (freeQueue.size() >= CWSTATE_CHANGE_MEMPOOL_MAX_SIZE)
-			return false;
-
-		freeQueue.push(unusedStateChange);
-		return true;
-	}
-
-	/* CWStateChange allocator from mem-pool */
-	public CWStateChange newFromMemPoolCWStateChange(byte type,
-			int timestampOrDuration, long outTime) {
-		CWStateChange stateChange = popFromMemPool();
-
-		stateChange.setValues(type, timestampOrDuration, outTime);
-
-		return stateChange;
-	}
-
-	/* CWFrequencyChange allocator from mem-pool */
-	public CWFrequencyChange newFromMemPoolCWFrequencyChange(long freq) {
-		CWFrequencyChange freqChange = (CWFrequencyChange) popFromMemPool();
-
-		freqChange.setValues(freq);
-
-		return freqChange;
+			states.add(new CWStateChange(CWStateChange.TYPE_UP_TO_DOWN,
+					duration, timestamp));
 	}
 }

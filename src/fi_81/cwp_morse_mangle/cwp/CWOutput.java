@@ -130,7 +130,7 @@ public class CWOutput {
 			return true;
 		}
 
-		queue.add(stateChangeBuilder.newFromMemPoolCWFrequencyChange(newFreq));
+		queue.add(new CWFrequencyChange(newFreq));
 		delayedFreq = -1;
 
 		return true;
@@ -158,8 +158,7 @@ public class CWOutput {
 			long timestamp = currentTime - startTime;
 			int upStateDuration = (int) (currentTime - manualUpStartTime);
 
-			queue.add(stateChangeBuilder.newFromMemPoolCWStateChange(
-					stateChange, upStateDuration, timestamp));
+			queue.add(new CWStateChange(stateChange, upStateDuration, timestamp));
 
 			inManualUp = false;
 			sendFrequenceChange(delayedFreq);
@@ -175,8 +174,7 @@ public class CWOutput {
 			manualUpStartTime = System.currentTimeMillis();
 			long timestamp = manualUpStartTime - startTime;
 
-			queue.add(stateChangeBuilder.newFromMemPoolCWStateChange(
-					stateChange, (int) timestamp, timestamp));
+			queue.add(new CWStateChange(stateChange, (int) timestamp, timestamp));
 
 			inManualUp = true;
 			return true;
@@ -207,6 +205,8 @@ public class CWOutput {
 				break;
 			}
 
+			queue.remove();
+
 			switch (stateToSend.getType()) {
 			case CWStateChange.TYPE_DOWN_TO_UP:
 				notify.stateChange(CWave.TYPE_UP, stateToSend.getValue());
@@ -219,12 +219,6 @@ public class CWOutput {
 						.getFrequency());
 				break;
 			}
-
-			/*
-			 * state-change queued for transmit, remove from transmit-queue to
-			 * free-queue
-			 */
-			stateChangeBuilder.pushToMemPool(queue.remove());
 
 			addedToBuffer = true;
 		}
