@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlBinder;
 import fi_81.cwp_morse_mangle.CWPControlService.CWPControlNotification;
+import fi_81.cwp_morse_mangle.cwp.CWFrequencyChange;
 import fi_81.cwp_morse_mangle.morse.MorseCharList;
 import fi_81.cwp_morse_mangle.morse.MorseCodec;
 import android.app.Activity;
@@ -357,8 +358,8 @@ public class MainActivity extends Activity {
 
 		/* Make sure that channel is in acceptable range */
 		channelEdit.setOnEditorActionListener(new OnEditorActionListener() {
-			private final BigInteger int32MinValue = new BigInteger(Integer
-					.toString(Integer.MIN_VALUE));
+			private final BigInteger freqMaxValueNeg = new BigInteger(Long
+					.toString(CWFrequencyChange.MAX_FREQ_NEG));
 
 			public boolean onEditorAction(TextView v, int actionId,
 					KeyEvent event) {
@@ -380,13 +381,13 @@ public class MainActivity extends Activity {
 					channelEdit.setText(bigInput.toString());
 				}
 
-				/* Limit values to range 1..2^32 */
+				/* Limit values to range 1..2^32-1 */
 				if (bigInput.compareTo(BigInteger.ONE) < 0) {
 					bigInput = BigInteger.ONE;
 
 					channelEdit.setText(bigInput.toString());
-				} else if (bigInput.negate().compareTo(int32MinValue) < 0) {
-					bigInput = int32MinValue.negate();
+				} else if (bigInput.negate().compareTo(freqMaxValueNeg) < 0) {
+					bigInput = freqMaxValueNeg.negate();
 
 					channelEdit.setText(bigInput.toString());
 				}

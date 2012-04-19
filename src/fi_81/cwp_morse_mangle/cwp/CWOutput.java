@@ -120,7 +120,7 @@ public class CWOutput {
 	}
 
 	public boolean sendFrequenceChange(long newFreq) {
-		if (newFreq < 1 || -newFreq < Integer.MIN_VALUE)
+		if (newFreq < 1 || -newFreq < CWFrequencyChange.MAX_FREQ_NEG)
 			return true;
 
 		/* Current send state is at 'down' always except when inManualUp. */

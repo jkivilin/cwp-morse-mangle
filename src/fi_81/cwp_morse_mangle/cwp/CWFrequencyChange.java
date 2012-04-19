@@ -1,6 +1,8 @@
 package fi_81.cwp_morse_mangle.cwp;
 
 public class CWFrequencyChange extends CWStateChange {
+	public static final long MAX_FREQ_NEG = -Integer.MAX_VALUE;
+
 	public void setValues(long newFreq) {
 		/*
 		 * Register with correct type and add timestamp of 0 (making sending
