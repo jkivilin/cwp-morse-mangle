@@ -17,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
@@ -131,6 +132,9 @@ public class MainActivity extends Activity {
 
 			break;
 		}
+
+		EventLog.endProgRecv(System.currentTimeMillis(), "state-change: "
+				+ state);
 	}
 
 	/** To report touching state to service */
@@ -248,16 +252,24 @@ public class MainActivity extends Activity {
 					getResources().getText(R.string.toast_set_channel_to)
 							+ ": " + freq, 2000).show();
 		}
+
+		EventLog.endProgRecv(System.currentTimeMillis(), "freq-change: " + freq);
 	}
 
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		Debug.startMethodTracing("cwp_morse_mangle");
+		Debug.startAllocCounting();
+
 		EventLog.d(TAG, "onCreate()");
 
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.main);
+
+		/* Start CWP service */
+		startService(new Intent(this, CWPControlService.class));
 
 		/*
 		 * Handle touching of lamp
@@ -399,9 +411,6 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
-
-		/* Start CWP service */
-		startService(new Intent(this, CWPControlService.class));
 	}
 
 	@Override

@@ -350,6 +350,9 @@ public class CWPControlThread extends Thread {
 			if (key.isValid() && key.isReadable()) {
 				bytesCopied = connChannel.read(inBuf);
 
+				if (bytesCopied > 0)
+					EventLog.startProfRecv(System.currentTimeMillis());
+
 				EventLog.d(TAG, "handleNonBlockingNetworkIO(): read %d bytes",
 						bytesCopied);
 			}
@@ -396,8 +399,9 @@ public class CWPControlThread extends Thread {
 			}
 
 			/* Push unused value to memory pool */
-			if (freeQueue.size() < 16);
-				queuePush(freeQueue, value.clear());
+			if (freeQueue.size() < 16)
+				;
+			queuePush(freeQueue, value.clear());
 		}
 	}
 

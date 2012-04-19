@@ -9,6 +9,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Debug;
 import android.os.Handler;
 import android.os.IBinder;
 
@@ -79,6 +80,12 @@ public class CWPControlService extends Service {
 	public void onCreate() {
 		EventLog.d(TAG, "onCreate()");
 
+		/*
+		 * Have some initial value in profiler (CWPControlService sends initial
+		 * signals even without connection)
+		 */
+		EventLog.startProfRecv(System.currentTimeMillis());
+
 		/* Get notification manager */
 		notifyManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
@@ -125,6 +132,9 @@ public class CWPControlService extends Service {
 		/* Clear notifications */
 		notifyManager.cancel(R.string.app_name);
 		notifyManager = null;
+
+		/* Stop tracing */
+		Debug.startMethodTracing();
 
 		super.onDestroy();
 	}

@@ -14,6 +14,8 @@
         android:targetPackage="fi_81.cwp_morse_mangle" >
     </instrumentation>
 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:debuggable="true"
         android:icon="@drawable/ic_mangle"
