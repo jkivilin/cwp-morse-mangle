@@ -126,7 +126,13 @@ public class BitString implements Comparable<BitString>, CharSequence {
 
 	/** Append another BitString at end of this and return resulting BitString */
 	public BitString append(BitString endBits) {
-		return new BitString(bits + endBits.bits, true);
+		StringBuffer sb = localStringBuffer.get();
+		sb.setLength(0);
+
+		sb.append(bits);
+		sb.append(endBits.bits);
+
+		return new BitString(sb.toString(), true);
 	}
 
 	public BitString[] split(BitString splitString) {
