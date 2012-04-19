@@ -303,8 +303,12 @@ public class CWPControlService extends Service {
 		if (handler != null) {
 			CWPRunnable run = new CWPRunnable(recvStateUp, state);
 
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(run);
+			/*
+			 * Might be called from IO-thread, need to dispatch to UI thread.
+			 * Yield to give control to UI-thread faster.
+			 */
+			if (handler.post(run))
+				Thread.yield();
 		} else if (recvStateUp) {
 			/*
 			 * MainActivity not available, push notification since state change
@@ -321,8 +325,12 @@ public class CWPControlService extends Service {
 		if (handler != null) {
 			CWPRunnable run = new CWPRunnable(morse);
 
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(run);
+			/*
+			 * Might be called from IO-thread, need to dispatch to UI thread.
+			 * Yield to give control to UI-thread faster.
+			 */
+			if (handler.post(run))
+				Thread.yield();
 		}
 	}
 
@@ -334,8 +342,12 @@ public class CWPControlService extends Service {
 		if (handler != null) {
 			CWPRunnable run = new CWPRunnable(complete, sendMorse);
 
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(run);
+			/*
+			 * Might be called from IO-thread, need to dispatch to UI thread.
+			 * Yield to give control to UI-thread faster.
+			 */
+			if (handler.post(run))
+				Thread.yield();
 		}
 	}
 
@@ -346,8 +358,12 @@ public class CWPControlService extends Service {
 		if (handler != null) {
 			CWPRunnable run = new CWPRunnable(freq);
 
-			/* Might be called from IO-thread, need to dispatch to UI thread */
-			handler.post(run);
+			/*
+			 * Might be called from IO-thread, need to dispatch to UI thread.
+			 * Yield to give control to UI-thread faster.
+			 */
+			if (handler.post(run))
+				Thread.yield();
 		}
 	}
 
