@@ -12,7 +12,10 @@ public class MorseCharList {
 	private final static MorseChar characters[] = fillInMorseCharacters();
 	private static char allowedMorseChars[];
 
-	/* Longest length of morse code (excluding out internal SPECIAL_STOP_MESSAGE) */
+	/*
+	 * Longest length of morse code (excluding out internal
+	 * SPECIAL_STOP_MESSAGE)
+	 */
 	public static int longestMorseBits;
 
 	private static MorseChar[] fillInMorseCharacters() {
@@ -97,11 +100,13 @@ public class MorseCharList {
 			"10101011101010111|" +		"$|" +
 			"10111011101011101|" +		"@";
 
-		/* Convert data string to data structures */
+		/*
+		 * Convert data string to data structures
+		 */
 
 		String dataStrings[] = morseData.split("\\|");
 
-		BitString gatheredCodes = new BitString();
+		StringBuffer gatheredCodes = new StringBuffer(morseData.length());
 		StringBuffer allowed = new StringBuffer(dataStrings.length / 2);
 		MorseChar chars[] = new MorseChar[dataStrings.length / 2];
 		int[] codeOffsets = new int[dataStrings.length / 2];
@@ -111,17 +116,20 @@ public class MorseCharList {
 		 * single shared backing buffer to store all morse-code bits.
 		 */
 		for (int offset = 0, i = 0, len = dataStrings.length; i < len; i += 2) {
-			gatheredCodes = gatheredCodes.append(new BitString(dataStrings[i]));
+			gatheredCodes.append(dataStrings[i]);
 
 			codeOffsets[i / 2] = offset;
 			offset += dataStrings[i].length();
 		}
 
+		String gatheredCodesString = gatheredCodes.toString();
+
 		longestMorseBits = 0;
 		for (int i = 0, len = codeOffsets.length; i < len; i++) {
 			int nextOffset = (i + 1 < len) ? codeOffsets[i + 1] : gatheredCodes
 					.length();
-			BitString bs = gatheredCodes.substring(codeOffsets[i], nextOffset);
+			BitString bs = BitString.newBits(gatheredCodesString.substring(
+					codeOffsets[i], nextOffset));
 			char ch = dataStrings[i * 2 + 1].charAt(0);
 
 			chars[i] = new MorseChar(bs, ch);
