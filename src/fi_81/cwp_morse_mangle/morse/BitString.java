@@ -171,8 +171,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		idx = stringLength;
 		list.add(new BitString(bits.substring(prev, idx), true));
 
-		BitString splits[] = new BitString[list.size()];
-		list.toArray(splits);
+		BitString splits[] = list.toArray(new BitString[0]);
 		list.clear();
 
 		return splits;
