@@ -2,12 +2,30 @@ package fi_81.cwp_morse_mangle;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import android.os.Debug;
 import android.util.Log;
 
 /* Log wrapper with on/off switch and formatting input */
 public class EventLog {
 	private static final boolean logging = true;
+	private static final boolean tracing = true;
 	private static final AtomicLong recvSignalTime = new AtomicLong(0);
+
+	/* Tracing dumps to sd-card */
+	public static void startTracing() {
+		if (!tracing)
+			return;
+
+		Debug.startMethodTracing("cwp_morse_mangle");
+		Debug.startAllocCounting();
+	}
+
+	public static void endTracing() {
+		if (!tracing)
+			return;
+
+		Debug.stopMethodTracing();
+	}
 
 	/*
 	 * Performance profiling for received signals.
@@ -33,6 +51,7 @@ public class EventLog {
 				+ duration + " ms. (" + info + ')');
 	}
 
+	/* Log.[deiw] wrappers */
 	public static void d(String tag, String info) {
 		if (!logging)
 			return;

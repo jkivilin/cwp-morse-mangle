@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Debug;
 import android.os.Handler;
 import android.os.IBinder;
 
@@ -77,8 +76,7 @@ public class CWPControlService extends Service {
 	public void onCreate() {
 		EventLog.d(TAG, "onCreate()");
 
-		Debug.startMethodTracing("cwp_morse_mangle");
-		Debug.startAllocCounting();
+		EventLog.startTracing();
 
 		/*
 		 * Have some initial value in profiler (CWPControlService sends initial
@@ -134,7 +132,7 @@ public class CWPControlService extends Service {
 		notifyManager = null;
 
 		/* Stop tracing */
-		Debug.startMethodTracing();
+		EventLog.endTracing();
 
 		super.onDestroy();
 	}
