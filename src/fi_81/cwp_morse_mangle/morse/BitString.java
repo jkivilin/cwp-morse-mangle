@@ -25,8 +25,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 			return chars.toString();
 		}
 
-		StringBuffer sb = localStringBuffer.get();
-		sb.setLength(0);
+		StringBuffer sb = new StringBuffer(len);
 
 		sb.append(chars, 0, i);
 
@@ -60,8 +59,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 	 * Helper builders
 	 */
 	public static BitString newFilled(char oneOrZero, int numChars) {
-		StringBuffer sb = localStringBuffer.get();
-		sb.setLength(0);
+		StringBuffer sb = new StringBuffer(numChars);
 
 		for (int i = 0; i < numChars; i++)
 			sb.append(oneOrZero);
@@ -126,8 +124,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 
 	/** Append another BitString at end of this and return resulting BitString */
 	public BitString append(BitString endBits) {
-		StringBuffer sb = localStringBuffer.get();
-		sb.setLength(0);
+		StringBuffer sb = new StringBuffer(bits.length() + endBits.bits.length());
 
 		sb.append(bits);
 		sb.append(endBits.bits);
@@ -150,7 +147,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 			return array;
 		}
 
-		ArrayList<BitString> list = localArrayList.get();
+		ArrayList<BitString> list = new ArrayList<BitString>();
 		int idx = 0, prev = 0;
 
 		list.clear();
@@ -180,19 +177,4 @@ public class BitString implements Comparable<BitString>, CharSequence {
 	public boolean endWith(BitString suffix) {
 		return bits.endsWith(suffix.bits);
 	}
-
-	/* static ThreadLocal helpers for thread-safe preallocation */
-	private static final ThreadLocal<StringBuffer> localStringBuffer = new ThreadLocal<StringBuffer>() {
-		@Override
-		protected StringBuffer initialValue() {
-			return new StringBuffer();
-		}
-	};
-
-	private static final ThreadLocal<ArrayList<BitString>> localArrayList = new ThreadLocal<ArrayList<BitString>>() {
-		@Override
-		protected ArrayList<BitString> initialValue() {
-			return new ArrayList<BitString>();
-		}
-	};
 }
