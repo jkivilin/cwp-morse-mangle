@@ -76,8 +76,10 @@ public class CWPControlThread extends Thread {
 		try {
 			selector = Selector.open();
 		} catch (IOException e) {
-			EventLog.e(TAG, "CWPControlThread(): Selector.open() failed: %s",
-					e.toString());
+			EventLog.e(
+					TAG,
+					"CWPControlThread(): Selector.open() failed: "
+							+ e.toString());
 			System.exit(1);
 		}
 
@@ -163,8 +165,8 @@ public class CWPControlThread extends Thread {
 				try {
 					handleConnection();
 				} catch (IOException e) {
-					EventLog.w(TAG, "Server connection IOException: %s",
-							e.toString());
+					EventLog.w(TAG,
+							"Server connection IOException: " + e.toString());
 
 					/* IOException, connection trouble, reset connection */
 					resetServerConnection();
@@ -353,17 +355,16 @@ public class CWPControlThread extends Thread {
 				if (bytesCopied > 0)
 					EventLog.startProfRecv(System.currentTimeMillis());
 
-				EventLog.d(TAG, "handleNonBlockingNetworkIO(): read %d bytes",
-						bytesCopied);
+				EventLog.d(TAG, "handleNonBlockingNetworkIO(): read "
+						+ bytesCopied + " bytes");
 			}
 
 			/* Output writer */
 			if (key.isValid() && key.isWritable()) {
 				bytesCopied = connChannel.write(outBuf);
 
-				EventLog.d(TAG,
-						"handleNonBlockingNetworkIO(): written %d bytes",
-						bytesCopied);
+				EventLog.d(TAG, "handleNonBlockingNetworkIO(): written "
+						+ bytesCopied + " bytes");
 			}
 
 			keyIter.remove();
@@ -447,7 +448,7 @@ public class CWPControlThread extends Thread {
 
 	private void handleNewFrequency(long frequency) {
 		if (currFrequency != frequency) {
-			EventLog.d(TAG, "handleNewFrequency: %d", frequency);
+			EventLog.d(TAG, "handleNewFrequency: " + frequency);
 
 			currFrequency = frequency;
 
@@ -461,7 +462,7 @@ public class CWPControlThread extends Thread {
 			return;
 
 		if (connState == CONN_CONNECTED && cwpOut != null) {
-			EventLog.d(TAG, "handleNewSendingState: %b", stateUp);
+			EventLog.d(TAG, "handleNewSendingState: " + stateUp);
 
 			if (stateUp)
 				cwpOut.sendUp();
@@ -522,7 +523,7 @@ public class CWPControlThread extends Thread {
 		if (message == null || message.length() == 0)
 			return;
 
-		EventLog.d(TAG, "Received morse-message: '%s'", message);
+		EventLog.d(TAG, "Received morse-message: '" + message + '\'');
 
 		/* Fill to main message buffer */
 		recvMorseMessage.append(' ');
@@ -557,7 +558,7 @@ public class CWPControlThread extends Thread {
 		private static final String TAG = "CWPControlThread:inputNotify";
 
 		public void frequencyChange(long newFreq) {
-			EventLog.d(TAG, "freq-change: %d", newFreq);
+			EventLog.d(TAG, "freq-change: " + newFreq);
 
 			/* flush pending morse */
 			cwpIn.flushStaleMorseBits(inputNotify, true);
@@ -571,8 +572,8 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			EventLog.d(TAG, "state-change, state: %d, value: %d", newState,
-					value);
+			EventLog.d(TAG, "state-change, state: " + newState + ", value: "
+					+ value);
 
 			/* Report state change */
 			if (recvStateUp != isUpState) {
@@ -583,8 +584,8 @@ public class CWPControlThread extends Thread {
 		}
 
 		public void morseMessage(BitString morseBits) {
-			EventLog.d(TAG, "morse-message: %s [%s]", morseBits.toString(),
-					MorseCodec.decodeMorseToMessage(morseBits));
+			EventLog.d(TAG, "morse-message: " + morseBits.toString() + " ["
+					+ MorseCodec.decodeMorseToMessage(morseBits) + ']');
 
 			/* Gather all message bits */
 			if (morseMessageBits != null)
@@ -608,7 +609,7 @@ public class CWPControlThread extends Thread {
 		private static final String TAG = "CWPControlThread:outputNotify";
 
 		public void frequencyChange(long newFreq) {
-			EventLog.d(TAG, "freq-change: %d", newFreq);
+			EventLog.d(TAG, "freq-change: " + newFreq);
 
 			cwpService.notifyFrequencyChange(newFreq);
 		}
@@ -616,8 +617,8 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			EventLog.d(TAG, "state-change, state: %d, value: %d", newState,
-					value);
+			EventLog.d(TAG, "state-change, state: " + newState + ", value: "
+					+ value);
 
 			/* Report state change */
 			if (sendStateUp != isUpState) {
@@ -647,8 +648,10 @@ public class CWPControlThread extends Thread {
 		try {
 			selector.close();
 		} catch (IOException e) {
-			EventLog.w(TAG, "run()/cleanup: selector.close() exception: %s",
-					e.toString());
+			EventLog.w(
+					TAG,
+					"run()/cleanup: selector.close() exception: "
+							+ e.toString());
 		}
 	}
 
@@ -661,8 +664,9 @@ public class CWPControlThread extends Thread {
 			join();
 		} catch (InterruptedException ie) {
 			/* UI-thread interrupted from wait */
-			EventLog.w(TAG, "endWorkAndJoin(): joining ioThread failed [%s]",
-					ie.toString());
+			EventLog.w(TAG,
+					"endWorkAndJoin(): joining ioThread failed with exception: "
+							+ ie.toString());
 		}
 	}
 

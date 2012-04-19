@@ -74,7 +74,7 @@ public class MainActivity extends Activity {
 
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
-		EventLog.d(TAG, "visualizeStateChange(%d)", state);
+		EventLog.d(TAG, "visualizeStateChange( " + state + ')');
 
 		/* Change appearance of the lamp */
 		switch (state) {
@@ -139,8 +139,8 @@ public class MainActivity extends Activity {
 
 	/** To report touching state to service */
 	private void setTouchingState(boolean touching) {
-		EventLog.d(TAG, "setTouchingState(new: %b, old: %b)", touching,
-				touchingLamp);
+		EventLog.d(TAG, "setTouchingState(new: " + touching + ", old: "
+				+ touchingLamp + ")");
 
 		if (touchingLamp == touching)
 			return;
@@ -235,9 +235,8 @@ public class MainActivity extends Activity {
 
 	/** Called when CWP service changes frequency */
 	private void receivedNewChannelSetting(long freq) {
-		EventLog.d(TAG,
-				"receivedNewChannelSetting(new-freq: %d, old-freq: %d)", freq,
-				currentChannel);
+		EventLog.d(TAG, "receivedNewChannelSetting(new-freq: " + freq
+				+ ", old-freq: " + currentChannel + ")");
 
 		/* Tell user about new frequency */
 		if (currentChannel != freq) {
@@ -482,6 +481,7 @@ public class MainActivity extends Activity {
 		/* Stopping sound and vibrator is absolute must when pausing activity */
 		if (tone != null) {
 			tone.stopTone();
+			tone.release();
 			tone = null;
 		}
 		if (vibrator != null) {
@@ -516,8 +516,10 @@ public class MainActivity extends Activity {
 		EventLog.d(TAG, "onDestroy()");
 
 		/* Make sure there is no sound or vibration at exit */
-		if (tone != null)
+		if (tone != null) {
 			tone.stopTone();
+			tone.release();
+		}
 		if (vibrator != null)
 			vibrator.cancel();
 
@@ -625,7 +627,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void stateChange(int state) {
-			EventLog.d(TAG, "stateChange(%d)", state);
+			EventLog.d(TAG, "stateChange(" + state + ')');
 
 			if (!serviceBound) {
 				EventLog.w(TAG,
@@ -638,7 +640,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void morseUpdated(String morse) {
-			EventLog.d(TAG, "morseUpdated(%s)", morse);
+			EventLog.d(TAG, "morseUpdated(" + morse + ')');
 
 			if (!serviceBound) {
 				EventLog.w(TAG,
@@ -668,7 +670,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void frequencyChange(long freq) {
-			EventLog.d(TAG, "frequencyChange(%d)", freq);
+			EventLog.d(TAG, "frequencyChange(" + freq + ')');
 
 			if (!serviceBound) {
 				EventLog.w(TAG,
