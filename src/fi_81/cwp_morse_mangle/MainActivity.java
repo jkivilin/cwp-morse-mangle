@@ -69,7 +69,7 @@ public class MainActivity extends Activity {
 	private Drawable lampImageGreen;
 
 	private Vibrator vibrator;
-	private ToneGenerator tone;
+	private SinAudioLoop tone;
 
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
@@ -90,7 +90,7 @@ public class MainActivity extends Activity {
 			if (vibrator != null)
 				vibrator.cancel();
 			if (tone != null)
-				tone.stopTone();
+				tone.stop();
 
 			break;
 
@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
 			if (vibrator != null)
 				vibrator.vibrate(50);
 			if (tone != null)
-				tone.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE);
+				tone.play();
 
 			break;
 
@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
 			if (vibrator != null)
 				vibrator.vibrate(50);
 			if (tone != null)
-				tone.startTone(ToneGenerator.TONE_DTMF_1);
+				tone.play();
 
 			break;
 		}
@@ -445,8 +445,7 @@ public class MainActivity extends Activity {
 
 		if (DefaultSettings.getBeep(settings)) {
 			/* ToneGenerator for audiable signals */
-			tone = new ToneGenerator(AudioManager.STREAM_DTMF,
-					ToneGenerator.MAX_VOLUME);
+			tone = new SinAudioLoop();
 		}
 
 		if (serviceBound) {
@@ -480,7 +479,7 @@ public class MainActivity extends Activity {
 
 		/* Stopping sound and vibrator is absolute must when pausing activity */
 		if (tone != null) {
-			tone.stopTone();
+			tone.stop();
 			tone.release();
 			tone = null;
 		}
@@ -517,7 +516,7 @@ public class MainActivity extends Activity {
 
 		/* Make sure there is no sound or vibration at exit */
 		if (tone != null) {
-			tone.stopTone();
+			tone.stop();
 			tone.release();
 		}
 		if (vibrator != null)
