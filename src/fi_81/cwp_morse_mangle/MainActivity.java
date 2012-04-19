@@ -86,7 +86,7 @@ public class MainActivity extends Activity {
 			/* Draw gray lamp */
 			lampImage.setImageDrawable(lampImageGray);
 
-			/* End tone and vibration when wntering down-state */
+			/* End tone and vibration when entering down-state */
 			if (vibrator != null)
 				vibrator.cancel();
 			if (tone != null)
@@ -284,6 +284,8 @@ public class MainActivity extends Activity {
 					/* touching */
 					EventLog.d(TAG, "onTouch(ACTION_DOWN)");
 
+					EventLog.startProfSend(System.currentTimeMillis(),
+							"up-wave");
 					setTouchingState(true);
 					return true;
 
@@ -294,6 +296,8 @@ public class MainActivity extends Activity {
 					EventLog.d(TAG, up ? "onTouch(ACTION_UP)"
 							: "onTouch(ACTION_CANCEL)");
 
+					EventLog.startProfSend(System.currentTimeMillis(),
+							"down-wave");
 					setTouchingState(false);
 					return true;
 				}

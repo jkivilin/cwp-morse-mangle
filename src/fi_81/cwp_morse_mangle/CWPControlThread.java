@@ -362,6 +362,9 @@ public class CWPControlThread extends Thread {
 			if (key.isValid() && key.isWritable()) {
 				bytesCopied = connChannel.write(outBuf);
 
+				if (bytesCopied > 0)
+					EventLog.endProgSend(System.currentTimeMillis());
+
 				EventLog.d(TAG, "handleNonBlockingNetworkIO(): written "
 						+ bytesCopied + " bytes");
 			}

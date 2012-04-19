@@ -8,8 +8,9 @@ import android.util.Log;
 /* Log wrapper with on/off switch and formatting input */
 public class EventLog {
 	private static final boolean logging = true;
-	private static final boolean tracing = true;
+	private static final boolean tracing = false;
 	private static final AtomicLong recvSignalTime = new AtomicLong(0);
+	private static final AtomicLong sendSignalTime = new AtomicLong(0);
 
 	/* Tracing dumps to sd-card */
 	public static void startTracing() {
@@ -38,17 +39,45 @@ public class EventLog {
 
 		recvSignalTime.set(timeReceived);
 
-		Log.d("profiler", "received signal from server");
+		Log.d("profiler", "received signal from network");
 	}
 
 	public static void endProgRecv(long timeProcessed, String info) {
 		if (!logging)
 			return;
 
-		long duration = timeProcessed - recvSignalTime.get();
+		long recvTime = recvSignalTime.getAndSet(0);
+		if (recvTime == 0)
+			return;
 
-		Log.d("profiler", "duration from receiving signal to handling: "
-				+ duration + " ms. (" + info + ')');
+		long duration = timeProcessed - recvTime;
+
+		Log.d("profiler",
+				"duration receiving signal from network to handling: "
+						+ duration + " ms. (" + info + ')');
+	}
+
+	public static void startProfSend(long timeReceived, String info) {
+		if (!logging)
+			return;
+
+		sendSignalTime.set(timeReceived);
+
+		Log.d("profiler", "sending signal (" + info + ')');
+	}
+
+	public static void endProgSend(long timeProcessed) {
+		if (!logging)
+			return;
+
+		long sendTime = sendSignalTime.getAndSet(0);
+		if (sendTime == 0)
+			return;
+
+		long duration = timeProcessed - sendTime;
+
+		Log.d("profiler", "duration from sending signal to network: "
+				+ duration + " ms.");
 	}
 
 	/* Log.[deiw] wrappers */
