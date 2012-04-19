@@ -14,18 +14,16 @@ public class EventLog {
 
 	/* Tracing dumps to sd-card */
 	public static void startTracing() {
-		if (!tracing)
-			return;
+		if (tracing)
+			Debug.startMethodTracing("cwp_morse_mangle");
 
-		Debug.startMethodTracing("cwp_morse_mangle");
-		Debug.startAllocCounting();
+		if (logging)
+			Debug.startAllocCounting();
 	}
 
 	public static void endTracing() {
-		if (!tracing)
-			return;
-
-		Debug.stopMethodTracing();
+		if (tracing)
+			Debug.stopMethodTracing();
 	}
 
 	/*
@@ -38,8 +36,12 @@ public class EventLog {
 			return;
 
 		recvSignalTime.set(timeReceived);
+		int allocs = Debug.getThreadAllocCount();
+		int size = Debug.getThreadAllocSize();
 
-		Log.d("profiler", "received signal from network");
+		Log.d("profiler",
+				"received signal from network. Memory (used/allocs): " + size
+						+ "/" + allocs);
 	}
 
 	public static void endProgRecv(long timeProcessed, String info) {
@@ -51,10 +53,13 @@ public class EventLog {
 			return;
 
 		long duration = timeProcessed - recvTime;
+		int allocs = Debug.getThreadAllocCount();
+		int size = Debug.getThreadAllocSize();
 
 		Log.d("profiler",
 				"duration receiving signal from network to handling: "
-						+ duration + " ms. (" + info + ')');
+						+ duration + " ms (" + info
+						+ "). Memory (used/allocs): " + size + "/" + allocs);
 	}
 
 	public static void startProfSend(long timeReceived, String info) {
@@ -62,8 +67,11 @@ public class EventLog {
 			return;
 
 		sendSignalTime.set(timeReceived);
+		int allocs = Debug.getThreadAllocCount();
+		int size = Debug.getThreadAllocSize();
 
-		Log.d("profiler", "sending signal (" + info + ')');
+		Log.d("profiler", "sending signal (" + info
+				+ "). Memory (used/allocs): " + size + "/" + allocs);
 	}
 
 	public static void endProgSend(long timeProcessed) {
@@ -75,9 +83,12 @@ public class EventLog {
 			return;
 
 		long duration = timeProcessed - sendTime;
+		int allocs = Debug.getThreadAllocCount();
+		int size = Debug.getThreadAllocSize();
 
 		Log.d("profiler", "duration from sending signal to network: "
-				+ duration + " ms.");
+				+ duration + " ms. Memory (used/allocs): " + size + "/"
+				+ allocs);
 	}
 
 	/* Log.[deiw] wrappers */
