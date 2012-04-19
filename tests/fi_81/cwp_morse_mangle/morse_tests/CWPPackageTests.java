@@ -216,12 +216,8 @@ public class CWPPackageTests extends TestCase {
 		assertTrue(cwi != null);
 
 		/* process input */
-		try {
-			cwi.processInput(notify);
-			cwi.flushStaleMorseBits(notify, true);
-		} catch (Exception e) {
-			fail(e.toString());
-		}
+		cwi.processInput(notify);
+		cwi.flushStaleMorseBits(notify, true);
 
 		/* check processed data */
 		assertFalse(cwiq.isQueueReadReady());
