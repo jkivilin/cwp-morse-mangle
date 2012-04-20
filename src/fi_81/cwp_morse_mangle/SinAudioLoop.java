@@ -6,34 +6,43 @@ import android.media.AudioTrack;
 
 /* Based on example from http://stackoverflow.com/questions/2413426/playing-an-arbitrary-tone-with-android */
 public class SinAudioLoop {
-	private byte[] soundBuffer;
+	private static final int sampleRate = 8000;
+
+	private final byte[] soundBuffer = initSoundBuffer();
 	private AudioTrack audioTrack;
 	private float audioMaxVolume;
 	private float audioMinVolume;
 
-	public SinAudioLoop() {
-		final int sampleRate = 8000;
+	private byte[] initSoundBuffer() {
 		final double freqOfTone = 400;
 		final int loopLengthMs = 1000;
-		final double[] sample = new double[loopLengthMs * sampleRate / 1000];
-		soundBuffer = new byte[2 * sample.length];
+		final int sampleLen = loopLengthMs * sampleRate / 1000;
+		final int maxSampleHeight = 0x7fff;
+		final byte[] soundBuffer = new byte[2 * sampleLen];
 
-		/* Generate audio buffer */
-		for (int i = 0; i < sample.length; i++)
-			sample[i] = Math.sin(2 * Math.PI * i / (sampleRate / freqOfTone));
+		/* Generate audio buffer as 16 bit pcm sound array */
+		for (int i = 0; i < sampleLen; i++) {
+			double sample = Math.sin(2 * Math.PI * i
+					/ (sampleRate / freqOfTone));
+			int val = (int) Math.round(sample * maxSampleHeight);
 
-		/* Convert to 16bit pcm sound array */
-		for (int i = 0; i < sample.length; i++) {
-			short val = (short) (sample[i] * Short.MAX_VALUE);
+			if (val < -maxSampleHeight)
+				val = -maxSampleHeight;
+			else if (val > maxSampleHeight)
+				val = maxSampleHeight;
 
 			soundBuffer[i * 2 + 0] = (byte) (val & 0xff);
 			soundBuffer[i * 2 + 1] = (byte) ((val >> 8) & 0xff);
 		}
 
+		return soundBuffer;
+	}
+
+	public SinAudioLoop() {
 		/* Setup audio track for looped sound-effect */
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate,
 				AudioFormat.CHANNEL_CONFIGURATION_MONO,
-				AudioFormat.ENCODING_PCM_16BIT, sample.length,
+				AudioFormat.ENCODING_PCM_16BIT, soundBuffer.length / 2,
 				AudioTrack.MODE_STATIC);
 
 		audioTrack.write(soundBuffer, 0, soundBuffer.length);
