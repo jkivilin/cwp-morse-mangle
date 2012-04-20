@@ -675,9 +675,6 @@ public class CWPControlThread extends Thread {
 
 		/* signal IO-thread of new message */
 		interrupt();
-
-		/* yield to give control to IO-thread faster */
-		Thread.yield();
 	}
 
 	/** Set new frequency */
@@ -687,9 +684,6 @@ public class CWPControlThread extends Thread {
 
 		/* signal IO-thread of new message */
 		interrupt();
-
-		/* yield to give control to IO-thread faster */
-		Thread.yield();
 	}
 
 	/** Set sending state */
@@ -699,9 +693,6 @@ public class CWPControlThread extends Thread {
 
 		/* signal IO-thread of new message */
 		interrupt();
-
-		/* yield to give control to IO-thread faster */
-		Thread.yield();
 	}
 
 	/** Set to send morse message */
@@ -711,9 +702,6 @@ public class CWPControlThread extends Thread {
 
 		/* signal IO-thread of new message */
 		interrupt();
-
-		/* yield to give control to IO-thread faster */
-		Thread.yield();
 	}
 
 	/** Request current state from IO-thread */
@@ -723,9 +711,6 @@ public class CWPControlThread extends Thread {
 
 		/* signal IO-thread of new message */
 		interrupt();
-
-		/* yield to give control to IO-thread faster */
-		Thread.yield();
 	}
 
 	/** Request to clear received morse messages */
@@ -735,9 +720,6 @@ public class CWPControlThread extends Thread {
 
 		/* signal IO-thread of new message */
 		interrupt();
-
-		/* yield to give control to IO-thread faster */
-		Thread.yield();
 	}
 
 	private static void queuePush(ArrayDeque<CWPThreadValue> queue,

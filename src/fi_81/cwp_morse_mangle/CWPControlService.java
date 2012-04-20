@@ -305,10 +305,8 @@ public class CWPControlService extends Service {
 
 			/*
 			 * Might be called from IO-thread, need to dispatch to UI thread.
-			 * Yield to give control to UI-thread faster.
 			 */
-			if (handler.post(run))
-				Thread.yield();
+			handler.post(run);
 		} else if (recvStateUp) {
 			/*
 			 * MainActivity not available, push notification since state change
@@ -327,10 +325,8 @@ public class CWPControlService extends Service {
 
 			/*
 			 * Might be called from IO-thread, need to dispatch to UI thread.
-			 * Yield to give control to UI-thread faster.
 			 */
-			if (handler.post(run))
-				Thread.yield();
+			handler.post(run);
 		}
 	}
 
@@ -344,10 +340,8 @@ public class CWPControlService extends Service {
 
 			/*
 			 * Might be called from IO-thread, need to dispatch to UI thread.
-			 * Yield to give control to UI-thread faster.
 			 */
-			if (handler.post(run))
-				Thread.yield();
+			handler.post(run);
 		}
 	}
 
@@ -360,10 +354,8 @@ public class CWPControlService extends Service {
 
 			/*
 			 * Might be called from IO-thread, need to dispatch to UI thread.
-			 * Yield to give control to UI-thread faster.
 			 */
-			if (handler.post(run))
-				Thread.yield();
+			handler.post(run);
 		}
 	}
 
