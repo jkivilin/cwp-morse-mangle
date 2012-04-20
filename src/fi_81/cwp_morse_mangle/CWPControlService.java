@@ -89,6 +89,7 @@ public class CWPControlService extends Service {
 
 		/* Start IO-thread */
 		ioThread = new CWPControlThread(this);
+		ioThread.setName("CWPControlThread");
 		ioThread.start();
 
 		super.onCreate();
