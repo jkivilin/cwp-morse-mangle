@@ -8,11 +8,13 @@ import android.media.AudioTrack;
 public class SinAudioLoop {
 	private byte[] soundBuffer;
 	private AudioTrack audioTrack;
+	private float audioMaxVolume;
+	private float audioMinVolume;
 
 	public SinAudioLoop() {
 		final int sampleRate = 8000;
 		final double freqOfTone = 400;
-		final int loopLengthMs = (int)(sampleRate / freqOfTone);
+		final int loopLengthMs = 1000;
 		final double[] sample = new double[loopLengthMs * sampleRate / 1000];
 		soundBuffer = new byte[2 * sample.length];
 
@@ -36,17 +38,25 @@ public class SinAudioLoop {
 
 		audioTrack.write(soundBuffer, 0, soundBuffer.length);
 		audioTrack.setLoopPoints(0, soundBuffer.length / 4, -1);
-	}
 
-	public void play() {
+		audioMinVolume = AudioTrack.getMinVolume();
+		audioMaxVolume = AudioTrack.getMaxVolume();
+
+		audioTrack.setStereoVolume(audioMinVolume, audioMinVolume);
 		audioTrack.play();
 	}
 
+	public void play() {
+		audioTrack.setStereoVolume(audioMaxVolume, audioMaxVolume);
+	}
+
 	public void stop() {
-		audioTrack.pause();
+		audioTrack.setStereoVolume(audioMinVolume, audioMinVolume);
 	}
 
 	public void release() {
+		audioTrack.setStereoVolume(audioMinVolume, audioMinVolume);
+		audioTrack.stop();
 		audioTrack.release();
 	}
 }
