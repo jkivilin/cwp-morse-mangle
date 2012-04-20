@@ -62,7 +62,7 @@ public class EventLog {
 	}
 
 	public static void startProfSend(long timeReceived, String info) {
-		if (logging) {
+		if (profiling) {
 			sendSignalTime.set(timeReceived);
 			int allocs = Debug.getThreadAllocCount();
 			int size = Debug.getThreadAllocSize();
@@ -73,7 +73,7 @@ public class EventLog {
 	}
 
 	public static void endProgSend(long timeProcessed) {
-		if (logging) {
+		if (profiling) {
 			long sendTime = sendSignalTime.getAndSet(0);
 			if (sendTime == 0)
 				return;
