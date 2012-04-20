@@ -25,7 +25,8 @@ public class BitString implements Comparable<BitString>, CharSequence {
 			return chars.toString();
 		}
 
-		StringBuffer sb = new StringBuffer(len);
+		StringBuffer sb = localStringBuffer.get();
+		sb.setLength(0);
 
 		sb.append(chars, 0, i);
 
@@ -59,7 +60,8 @@ public class BitString implements Comparable<BitString>, CharSequence {
 	 * Helper builders
 	 */
 	public static BitString newFilled(char oneOrZero, int numChars) {
-		StringBuffer sb = new StringBuffer(numChars);
+		StringBuffer sb = localStringBuffer.get();
+		sb.setLength(0);
 
 		for (int i = 0; i < numChars; i++)
 			sb.append(oneOrZero);
@@ -124,7 +126,8 @@ public class BitString implements Comparable<BitString>, CharSequence {
 
 	/** Append another BitString at end of this and return resulting BitString */
 	public BitString append(BitString endBits) {
-		StringBuffer sb = new StringBuffer(bits.length() + endBits.bits.length());
+		StringBuffer sb = localStringBuffer.get();
+		sb.setLength(0);
 
 		sb.append(bits);
 		sb.append(endBits.bits);
@@ -147,7 +150,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 			return array;
 		}
 
-		ArrayList<BitString> list = new ArrayList<BitString>();
+		ArrayList<BitString> list = localArrayList.get();
 		int idx = 0, prev = 0;
 
 		list.clear();
@@ -168,7 +171,7 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		idx = stringLength;
 		list.add(new BitString(bits.substring(prev, idx), true));
 
-		BitString splits[] = list.toArray(new BitString[0]);
+		BitString splits[] = list.toArray(emptyArray);
 		list.clear();
 
 		return splits;
@@ -176,5 +179,35 @@ public class BitString implements Comparable<BitString>, CharSequence {
 
 	public boolean endWith(BitString suffix) {
 		return bits.endsWith(suffix.bits);
+	}
+
+	/* Cached empty object to avoid allocation in split() */
+	private final static BitString[] emptyArray = new BitString[0];
+
+	/* Cached thread-local objects to reduce memory allocations by BitString */
+	private final static ThreadLocal<StringBuffer> localStringBuffer = new ThreadLocal<StringBuffer>() {
+		@Override
+		protected StringBuffer initialValue() {
+			return new StringBuffer();
+		}
+	};
+
+	private final static ThreadLocal<ArrayList<BitString>> localArrayList = new ThreadLocal<ArrayList<BitString>>() {
+		@Override
+		protected ArrayList<BitString> initialValue() {
+			return new ArrayList<BitString>();
+		}
+	};
+
+	/* Helper for handling endWith for StringBuffer */
+	public static boolean stringBufferEndWithBits(
+			StringBuffer stringBuf, BitString suffix) {
+		int suffixLen = suffix.length();
+		int bufferLen = stringBuf.length();
+
+		if (bufferLen < suffixLen)
+			return false;
+
+		return stringBuf.lastIndexOf(suffix.toString(), bufferLen - suffixLen) != -1;
 	}
 }

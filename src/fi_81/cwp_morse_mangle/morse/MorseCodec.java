@@ -19,7 +19,7 @@ public class MorseCodec {
 
 	/* Message string to morse code */
 	public static BitString encodeMessageToMorse(CharSequence message) {
-		BitString output = new BitString();
+		StringBuffer output = new StringBuffer();
 		boolean addCharStop = false;
 		boolean addWordStop = false;
 		int i, len = message.length();
@@ -50,19 +50,19 @@ public class MorseCodec {
 			 * character
 			 */
 			if (addCharStop) {
-				output = output.append(charStop);
+				output.append(charStop);
 				addCharStop = false;
 			}
 			if (addWordStop) {
-				output = output.append(wordStop);
+				output.append(wordStop);
 				addWordStop = false;
 			}
 
-			output = output.append(morse);
+			output.append(morse);
 			addCharStop = true;
 		}
 
-		return output;
+		return BitString.newBits(output.toString());
 	}
 
 	public static BitString trimMorseString(BitString morse) {

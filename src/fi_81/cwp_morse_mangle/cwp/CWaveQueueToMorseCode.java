@@ -42,12 +42,11 @@ public class CWaveQueueToMorseCode {
 	private double adaptionWidth;
 
 	/* Currently collected morse-bits */
-	private BitString morseBits;
+	private final StringBuffer morseBits = new StringBuffer();
 
 	private long lastPendingWaveTime;
 
 	public CWaveQueueToMorseCode() {
-		morseBits = new BitString();
 		lastPendingWaveTime = 0;
 
 		/* No adaption at start */
@@ -63,7 +62,7 @@ public class CWaveQueueToMorseCode {
 		/* Attempt to detect short morse signal width */
 		if (adaptionWidth <= 0.0) {
 			do {
-				CWave[] samples = queue.getQueue().toArray(new CWave[0]);
+				CWave[] samples = queue.getQueue().toArray(emptyCWaveArray);
 				adaptionWidth = detectSignalWidth(samples, samples.length,
 						force);
 				readapted = true;
@@ -116,18 +115,19 @@ public class CWaveQueueToMorseCode {
 
 			if (waveWidth <= MORSE_SHORT_WIDTH
 					* (1.0 + MORSE_ALLOWED_SHORT_JITTER)) {
-				morseBits = morseBits
+				morseBits
 						.append(wave.type == CWave.TYPE_DOWN ? MORSE_SHORT_ZERO_BITS
 								: MORSE_SHORT_ONE_BITS);
 				lastPendingWaveTime = System.currentTimeMillis();
 
 				if (wave.type == CWave.TYPE_UP) {
 					/* Check if last received code was end-of-contact */
-					if (morseBits.endWith(MORSE_SPECIAL_END_OF_CONTACT_BITS)) {
+					if (BitString.stringBufferEndWithBits(morseBits,
+							MORSE_SPECIAL_END_OF_CONTACT_BITS)) {
 						/* As this is end of message, reset width adaption */
 						adaptionWidth = 0.0;
 
-						morseBits = morseBits.append(MORSE_LONG_ZERO_BITS);
+						morseBits.append(MORSE_LONG_ZERO_BITS);
 
 						return returnMorseCode(queue, i);
 					}
@@ -151,20 +151,21 @@ public class CWaveQueueToMorseCode {
 			if (waveWidth <= MORSE_LONG_WIDTH
 					* (1.0 + MORSE_ALLOWED_LONG_JITTER)) {
 				if (wave.type == CWave.TYPE_DOWN) {
-					morseBits = morseBits.append(MORSE_LONG_ZERO_BITS);
+					morseBits.append(MORSE_LONG_ZERO_BITS);
 
 					/* Received full morse code, pass morse code to upper layer */
 					return returnMorseCode(queue, i);
 				} else {
-					morseBits = morseBits.append(MORSE_LONG_ONE_BITS);
+					morseBits.append(MORSE_LONG_ONE_BITS);
 					lastPendingWaveTime = System.currentTimeMillis();
 
 					/* Check if last received code was end-of-contact */
-					if (morseBits.endWith(MORSE_SPECIAL_END_OF_CONTACT_BITS)) {
+					if (BitString.stringBufferEndWithBits(morseBits,
+							MORSE_SPECIAL_END_OF_CONTACT_BITS)) {
 						/* As this is end of message, reset width adaption */
 						adaptionWidth = 0.0;
 
-						morseBits = morseBits.append(MORSE_LONG_ZERO_BITS);
+						morseBits.append(MORSE_LONG_ZERO_BITS);
 
 						return returnMorseCode(queue, i);
 					}
@@ -189,7 +190,7 @@ public class CWaveQueueToMorseCode {
 
 				if (waveWidth <= MORSE_WORDBREAK_WIDTH
 						* (1.0 + MORSE_ALLOWED_WORDBREAK_JITTER)) {
-					morseBits = morseBits.append(MORSE_WORDBREAK_ZERO_BITS);
+					morseBits.append(MORSE_WORDBREAK_ZERO_BITS);
 
 					/*
 					 * Received full morse word/code, pass morse code to upper
@@ -207,8 +208,7 @@ public class CWaveQueueToMorseCode {
 				 * Add end of contant code at end of these morse messages, to
 				 * indicate end of work/message.
 				 */
-				morseBits = morseBits
-						.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
+				morseBits.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
 
 				/* As this is end of message, reset width adaption */
 				adaptionWidth = 0.0;
@@ -243,12 +243,11 @@ public class CWaveQueueToMorseCode {
 			 * Add end of contant code at end of these morse messages, to
 			 * indicate end of work/message.
 			 */
-			morseBits = morseBits
-					.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
+			morseBits.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
 
-			BitString morseCode = morseBits;
+			BitString morseCode = BitString.newBits(morseBits.toString());
 
-			morseBits = new BitString();
+			morseBits.setLength(0);
 			lastPendingWaveTime = 0;
 
 			return morseCode;
@@ -265,13 +264,13 @@ public class CWaveQueueToMorseCode {
 	}
 
 	private BitString returnMorseCode(CWInputQueue queue, int i) {
-		BitString morseCode = morseBits;
+		BitString morseCode = BitString.newBits(morseBits.toString());
 
 		/* clear handled waves */
 		queue.completeWavesFromBegining(i + 1);
 
 		/* reset bit buffer */
-		morseBits = new BitString();
+		morseBits.setLength(0);
 		lastPendingWaveTime = 0;
 
 		return morseCode;
@@ -297,20 +296,17 @@ public class CWaveQueueToMorseCode {
 		}
 
 		/* morseBits contain old data that needs to be flushed */
-		morseBits = morseBits.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
+		morseBits.append(MORSE_LONG_ZERO_AND_SPECIAL_STOP_MESSAGE);
 
-		BitString morseCode = morseBits;
+		BitString morseCode = BitString.newBits(morseBits.toString());
 
-		morseBits = new BitString();
+		morseBits.setLength(0);
 		lastPendingWaveTime = 0;
 
 		return morseCode;
 	}
 
 	public boolean hadPendingBits() {
-		if (morseBits == null)
-			return false;
-
 		return (morseBits.length() > 0);
 	}
 
@@ -608,4 +604,7 @@ public class CWaveQueueToMorseCode {
 
 		return (long) (width * (MORSE_WORDBREAK_WIDTH + 1));
 	}
+
+	/* Cached empty array for toArray(T[]) */
+	private static final CWave[] emptyCWaveArray = new CWave[0];
 }

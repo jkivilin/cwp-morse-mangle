@@ -63,7 +63,7 @@ public class CWPControlThread extends Thread {
 	private boolean recvStateUp = false;
 	private boolean sendStateUp = false;
 	private long currFrequency = 1;
-	private BitString morseMessageBits;
+	private final StringBuffer morseMessageBits = new StringBuffer();
 	private final StringBuffer recvMorseMessage = new StringBuffer();
 	private final StringBuffer sendMorseMessage = new StringBuffer();
 
@@ -128,7 +128,6 @@ public class CWPControlThread extends Thread {
 		/* Clear connection state */
 		recvStateUp = false;
 		sendStateUp = false;
-		morseMessageBits = null;
 		busySendingMorseMessage = false;
 		sendMorseMessageString = null;
 		sendMorseMessage.setLength(0);
@@ -510,11 +509,12 @@ public class CWPControlThread extends Thread {
 	/** Decode received morse bits to message string and pass to UI-thread */
 	private void handleReceivedMorseMessageBuffer() {
 		/* Nothing to process? */
-		if (morseMessageBits == null || morseMessageBits.length() == 0)
+		if (morseMessageBits.length() == 0)
 			return;
 
-		morseMessageBits = morseMessageBits.append(BitString.newZeros(3));
-		String message = MorseCodec.decodeMorseToMessage(morseMessageBits);
+		morseMessageBits.append(BitString.newZeros(3));
+		String message = MorseCodec.decodeMorseToMessage(BitString
+				.newBits(morseMessageBits.toString()));
 
 		/* No message? */
 		if (message == null || message.length() == 0)
@@ -547,7 +547,7 @@ public class CWPControlThread extends Thread {
 		/* Send updated morse-message string to UI */
 		cwpService.notifyMorseUpdates(recvMorseMessage.toString());
 
-		morseMessageBits = null;
+		morseMessageBits.setLength(0);
 	}
 
 	/** Handle callbacks from CWInput */
@@ -584,17 +584,16 @@ public class CWPControlThread extends Thread {
 			EventLog.d(TAG, "morse-message: " + morseBits.toString());
 
 			/* Gather all message bits */
-			if (morseMessageBits != null)
-				morseMessageBits = morseMessageBits.append(morseBits);
-			else
-				morseMessageBits = morseBits;
+			morseMessageBits.append(morseBits);
 
 			/*
 			 * Message is ended either with endSequence (our internal
 			 * implementation specific code) or by endContact (by sender)
 			 */
-			if (morseMessageBits.endWith(MorseCodec.endSequence)
-					|| morseMessageBits.endWith(MorseCodec.endContact)) {
+			if (BitString.stringBufferEndWithBits(morseMessageBits,
+					MorseCodec.endSequence)
+					|| BitString.stringBufferEndWithBits(morseMessageBits,
+							MorseCodec.endContact)) {
 				handleReceivedMorseMessageBuffer();
 			}
 		}
