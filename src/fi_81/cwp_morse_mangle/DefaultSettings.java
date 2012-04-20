@@ -11,7 +11,7 @@ public class DefaultSettings {
 	public static boolean VIBRATOR_DEFAULT = true;
 
 	/* Milliseconds values for morse speed */
-	public static int MORSE_SPEED_FAST = 10;
+	public static int MORSE_SPEED_FAST = 50;
 	public static int MORSE_SPEED_MED = 100;
 	public static int MORSE_SPEED_SLOW = 200;
 
