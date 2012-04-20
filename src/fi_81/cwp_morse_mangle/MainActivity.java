@@ -600,7 +600,6 @@ public class MainActivity extends Activity {
 	private final CWPControlNotification cwpNotifications = new CWPControlNotification() {
 		private static final String TAG = "cwpNotifications";
 
-		@Override
 		public void stateChange(int state) {
 			if (!serviceBound) {
 				EventLog.w(TAG,
@@ -611,7 +610,6 @@ public class MainActivity extends Activity {
 			visualizeStateChange(state);
 		}
 
-		@Override
 		public void morseUpdated(String morse) {
 			if (!serviceBound) {
 				EventLog.w(TAG,
@@ -622,7 +620,6 @@ public class MainActivity extends Activity {
 			updateMorseMessages(morse);
 		}
 
-		@Override
 		public void morseMessageSendingState(boolean isComplete,
 				String messageBeingSend) {
 			if (!serviceBound) {
@@ -637,7 +634,6 @@ public class MainActivity extends Activity {
 				sendingMorseMessageBusy(messageBeingSend);
 		}
 
-		@Override
 		public void frequencyChange(long freq) {
 			if (!serviceBound) {
 				EventLog.w(TAG,
@@ -653,7 +649,6 @@ public class MainActivity extends Activity {
 	private final ServiceConnection cwpServiceConnection = new ServiceConnection() {
 		private static final String TAG = "cwpServiceConnection";
 
-		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			EventLog.d(TAG, "onServiceConnected()");
 
@@ -688,7 +683,6 @@ public class MainActivity extends Activity {
 			cwpService.setSendingState(touchingLamp);
 		}
 
-		@Override
 		public void onServiceDisconnected(ComponentName name) {
 			EventLog.d(TAG, "onServiceDisconnected()");
 

@@ -90,7 +90,6 @@ public class MainSettingsActivity extends PreferenceActivity implements
 		return idx;
 	}
 
-	@Override
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
 		if (preference == hostAddr) {
 			String value = (String) newValue;

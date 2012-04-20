@@ -81,7 +81,6 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		return new BitString(onesAndZeros, true);
 	}
 
-	@Override
 	public char charAt(int index) {
 		return bits.charAt(index);
 	}
@@ -96,7 +95,6 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		return bits.subSequence(start, end);
 	}
 
-	@Override
 	public int compareTo(BitString another) {
 		return bits.compareTo(another.bits);
 	}
