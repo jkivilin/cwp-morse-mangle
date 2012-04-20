@@ -1,3 +1,85 @@
-TODO: Readme!
+CWP Morse Mangle
+----------------
+by Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
-(Otherwise CWP Morse Mangle is complete)
+1. Installing and building
+2. Usage
+
+-----------
+1. Building
+-----------
+
+Here's up-to-date building instructions:
+
+1. Requirements
+ - Eclipse with Android Development Tools installed.
+
+2. Import project directory to Eclipse
+ - Start Eclipse and select "File->Import".
+ - Select "General->Existing Projects into Workspace".
+ - Browse into directory where you have downloaded CWP Morse Mangle.
+ - Select "Copy to workspace" and press "Finish".
+
+3. Fix project settings
+ - If running into problems after importing:
+   + Select CWPMorseMangle with right-click from "Package Explorer" and select
+     "Android Tools->Fix Project Properties".
+
+ - Make sure that project has UTF-8 as encoding character set:
+   + Select CWPMorseMangle with right-click from "Package Explorer" and select
+     "Properties".
+   + Select "Resources" and if current "Text file encoding" is not UTF-8,
+     select "Other: UTF-8".
+
+4. Build and run application selecting "Run->Run" from main-menu.
+
+--------
+2. Usage
+--------
+
+On start up application shows main-screen which contains:
+
+ - "Morse message" field: Used to input morse messages for sending.
+   + After entering message press "Send morse" button to initiate
+     message transfer to server.
+
+ - "Received messages" area: Used to display detected and decoded morse
+   messages from server.
+
+ - Lamp: Can be pressed to send signals and is used to show received signals.
+   + Signals can also generate audio and physical response, depending on
+     current settings.
+
+ - "Channel selection" field: Used to change and display current channel.
+
+Main-screen has menu with following entries:
+
+ - "Settings": Enter settings-screen.
+
+ - "Clear messages": Clears "Received messages" area of main-screen.
+
+ - "Send S.O.S.": Send S.O.S. morse message to server.
+
+ - "Reset connection": Resets connection to server.
+
+Settings-screen contains settings used by application:
+
+ - "CWP Server Setup"
+   + "Server address": Address of CWP server (default: cwp.obimobi.com)
+   + "Server port": Port number for CWP server (default: 20000)
+
+ - "Morse setup"
+   + "Sending speed": Speed at which to send morse messages
+     - "Fast": Morse "dot" length is 10 ms.
+     - "Medium": Morse "dot" length is 100 ms. (default)
+     - "Slow": Morse "dot" length is 200 ms.
+
+ - "Signal notifications"
+   + "Allow beep": Enable/Disable tone when receiving signal.
+   + "Allow vibration": Enable/Disable vibration when receiving signal.
+
+
+When leaving main-screen, application stays running on background waiting
+signals from CWP server. When signal is received application displays 
+notification in the notification-bar.
+
