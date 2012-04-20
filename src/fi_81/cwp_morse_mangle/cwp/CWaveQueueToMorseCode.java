@@ -36,7 +36,7 @@ public class CWaveQueueToMorseCode {
 	private static final double MORSE_MAX_ADAPTION_WIDTH = 1000.0;
 
 	/* limit number of sample waves used for detection */
-	private static final int MORSE_MAX_DETECTION_SAMPLE = 12;
+	private static final int MORSE_MAX_DETECTION_SAMPLE = 24;
 
 	/* Current adaption to wave width (length in time) */
 	private double adaptionWidth;
