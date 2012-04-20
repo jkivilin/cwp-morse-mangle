@@ -71,8 +71,6 @@ public class MainActivity extends Activity {
 
 	/** Visualization of wave state changes */
 	private void visualizeStateChange(int state) {
-		EventLog.d(TAG, "visualizeStateChange( " + state + ')');
-
 		/* Change appearance of the lamp */
 		switch (state) {
 		case CWPControlNotification.STATE_DOWN:
@@ -136,9 +134,6 @@ public class MainActivity extends Activity {
 
 	/** To report touching state to service */
 	private void setTouchingState(boolean touching) {
-		EventLog.d(TAG, "setTouchingState(new: " + touching + ", old: "
-				+ touchingLamp + ")");
-
 		if (touchingLamp == touching)
 			return;
 
@@ -151,8 +146,6 @@ public class MainActivity extends Activity {
 
 	/** Called when sending morse message completes */
 	private void sendingMorseMessageComplete() {
-		EventLog.d(TAG, "sendingMorseMessageComplete()");
-
 		if (!sendingMorseMessage)
 			return;
 
@@ -206,8 +199,6 @@ public class MainActivity extends Activity {
 
 	/** Called when sending morse message to server */
 	private void sendMorseMessage(boolean sendSOS) {
-		EventLog.d(TAG, "sendMorseMessage()");
-
 		/* Disable input, visualize spinner */
 		sendingMorseMessageBusy(null);
 
@@ -232,9 +223,6 @@ public class MainActivity extends Activity {
 
 	/** Called when CWP service changes frequency */
 	private void receivedNewChannelSetting(long freq) {
-		EventLog.d(TAG, "receivedNewChannelSetting(new-freq: " + freq
-				+ ", old-freq: " + currentChannel + ")");
-
 		/* Tell user about new frequency */
 		if (currentChannel != freq) {
 			currentChannel = freq;
@@ -271,8 +259,6 @@ public class MainActivity extends Activity {
 
 		lampImage.setOnTouchListener(new OnTouchListener() {
 			public boolean onTouch(View v, MotionEvent event) {
-				boolean up = false;
-
 				/* Ignore lamp when sending morse message */
 				if (sendingMorseMessage || !serviceBound)
 					return false;
@@ -280,20 +266,14 @@ public class MainActivity extends Activity {
 				switch (event.getActionMasked()) {
 				case MotionEvent.ACTION_DOWN:
 					/* touching */
-					EventLog.d(TAG, "onTouch(ACTION_DOWN)");
-
 					EventLog.startProfSend(System.currentTimeMillis(),
 							"up-wave");
 					setTouchingState(true);
 					return true;
 
 				case MotionEvent.ACTION_UP:
-					up = true;
 				case MotionEvent.ACTION_CANCEL:
 					/* end of touch */
-					EventLog.d(TAG, up ? "onTouch(ACTION_UP)"
-							: "onTouch(ACTION_CANCEL)");
-
 					EventLog.startProfSend(System.currentTimeMillis(),
 							"down-wave");
 					setTouchingState(false);
@@ -323,8 +303,6 @@ public class MainActivity extends Activity {
 		/* enable send button when there is some input entered */
 		morseEdit.setOnKeyListener(new OnKeyListener() {
 			public boolean onKey(View v, int keyCode, KeyEvent event) {
-				EventLog.d(TAG, "onKey()");
-
 				/* If already sending, do not re-enable button */
 				if (sendingMorseMessage)
 					return false;
@@ -624,8 +602,6 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void stateChange(int state) {
-			EventLog.d(TAG, "stateChange(" + state + ')');
-
 			if (!serviceBound) {
 				EventLog.w(TAG,
 						"stateChange() callback while service not bound!");
@@ -637,8 +613,6 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void morseUpdated(String morse) {
-			EventLog.d(TAG, "morseUpdated(" + morse + ')');
-
 			if (!serviceBound) {
 				EventLog.w(TAG,
 						"morseUpdated() callback while service not bound!");
@@ -651,8 +625,6 @@ public class MainActivity extends Activity {
 		@Override
 		public void morseMessageSendingState(boolean isComplete,
 				String messageBeingSend) {
-			EventLog.d(TAG, "morseMessageSendingState()");
-
 			if (!serviceBound) {
 				EventLog.w(TAG,
 						"morseMessageComplete() callback while service not bound!");
@@ -667,8 +639,6 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void frequencyChange(long freq) {
-			EventLog.d(TAG, "frequencyChange(" + freq + ')');
-
 			if (!serviceBound) {
 				EventLog.w(TAG,
 						"frequencyChange() callback while service not bound!");

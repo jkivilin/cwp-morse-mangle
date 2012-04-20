@@ -367,7 +367,6 @@ public class CWPControlService extends Service {
 
 	/** Called by MainActivity when touching lamp-image */
 	public void setSendingState(boolean setUpState) {
-		EventLog.d(TAG, "setSendingState: " + setUpState);
 		ioThread.setSendingState(setUpState);
 	}
 

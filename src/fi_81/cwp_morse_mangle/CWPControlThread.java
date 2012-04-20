@@ -352,9 +352,6 @@ public class CWPControlThread extends Thread {
 
 				if (bytesCopied > 0)
 					EventLog.startProfRecv(System.currentTimeMillis());
-
-				EventLog.d(TAG, "handleNonBlockingNetworkIO(): read "
-						+ bytesCopied + " bytes");
 			}
 
 			/* Output writer */
@@ -363,9 +360,6 @@ public class CWPControlThread extends Thread {
 
 				if (bytesCopied > 0)
 					EventLog.endProgSend(System.currentTimeMillis());
-
-				EventLog.d(TAG, "handleNonBlockingNetworkIO(): written "
-						+ bytesCopied + " bytes");
 			}
 
 			keyIter.remove();
@@ -444,8 +438,6 @@ public class CWPControlThread extends Thread {
 
 	private void handleNewFrequency(long frequency) {
 		if (currFrequency != frequency) {
-			EventLog.d(TAG, "handleNewFrequency: " + frequency);
-
 			currFrequency = frequency;
 
 			if (connState == CONN_CONNECTED && cwpOut != null)
@@ -458,8 +450,6 @@ public class CWPControlThread extends Thread {
 			return;
 
 		if (connState == CONN_CONNECTED && cwpOut != null) {
-			EventLog.d(TAG, "handleNewSendingState: " + stateUp);
-
 			if (stateUp)
 				cwpOut.sendUp();
 			else
@@ -520,8 +510,6 @@ public class CWPControlThread extends Thread {
 		if (message == null || message.length() == 0)
 			return;
 
-		EventLog.d(TAG, "Received morse-message: '" + message + '\'');
-
 		/* Fill to main message buffer */
 		recvMorseMessage.append(' ');
 		for (char ch : message.toCharArray()) {
@@ -552,11 +540,7 @@ public class CWPControlThread extends Thread {
 
 	/** Handle callbacks from CWInput */
 	private final CWInputNotification inputNotify = new CWInputNotification() {
-		private static final String TAG = "CWPControlThread:inputNotify";
-
 		public void frequencyChange(long newFreq) {
-			EventLog.d(TAG, "freq-change: " + newFreq);
-
 			/* flush pending morse */
 			cwpIn.flushStaleMorseBits(inputNotify, true);
 
@@ -569,9 +553,6 @@ public class CWPControlThread extends Thread {
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
 
-			EventLog.d(TAG, "state-change, state: " + newState + ", value: "
-					+ value);
-
 			/* Report state change */
 			if (recvStateUp != isUpState) {
 				recvStateUp = isUpState;
@@ -581,8 +562,6 @@ public class CWPControlThread extends Thread {
 		}
 
 		public void morseMessage(BitString morseBits) {
-			EventLog.d(TAG, "morse-message: " + morseBits.toString());
-
 			/* Gather all message bits */
 			morseMessageBits.append(morseBits);
 
@@ -601,19 +580,12 @@ public class CWPControlThread extends Thread {
 
 	/** Handle callbacks from CWOutput */
 	private final CWOutputNotification outputNotify = new CWOutputNotification() {
-		private static final String TAG = "CWPControlThread:outputNotify";
-
 		public void frequencyChange(long newFreq) {
-			EventLog.d(TAG, "freq-change: " + newFreq);
-
 			cwpService.notifyFrequencyChange(newFreq);
 		}
 
 		public void stateChange(byte newState, int value) {
 			boolean isUpState = newState == CWave.TYPE_UP;
-
-			EventLog.d(TAG, "state-change, state: " + newState + ", value: "
-					+ value);
 
 			/* Report state change */
 			if (sendStateUp != isUpState) {
