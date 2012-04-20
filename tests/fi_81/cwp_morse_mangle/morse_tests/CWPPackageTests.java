@@ -273,12 +273,10 @@ public class CWPPackageTests extends TestCase {
 		final LinkedList<Integer> state_change_count = new LinkedList<Integer>();
 		try {
 			notify = new CWInputNotification() {
-				@Override
 				public void frequencyChange(long newFreq) {
 					freqs.add(new Long(newFreq));
 				}
 
-				@Override
 				public void stateChange(byte newState, int value) {
 					if (state_change_count.size() == 0)
 						state_change_count.add(1);
@@ -287,7 +285,6 @@ public class CWPPackageTests extends TestCase {
 								.intValue() + 1);
 				}
 
-				@Override
 				public void morseMessage(BitString morseBits) {
 					Log.d(TAG, MorseCodec.decodeMorseToMessage(morseBits));
 				}
@@ -395,11 +392,9 @@ public class CWPPackageTests extends TestCase {
 		morseCode.add(new BitString());
 
 		final CWInputNotification notifyIn = new CWInputNotification() {
-			@Override
 			public void frequencyChange(long newFreq) {
 			}
 
-			@Override
 			public void stateChange(byte newState, int value) {
 				if (state_change_count.size() == 0)
 					state_change_count.add(1);
@@ -408,7 +403,6 @@ public class CWPPackageTests extends TestCase {
 							.intValue() + 1);
 			}
 
-			@Override
 			public void morseMessage(BitString morseBits) {
 				System.out.println(morseBits);
 				System.out.println(MorseCodec.decodeMorseToMessage(morseBits));
@@ -541,11 +535,9 @@ public class CWPPackageTests extends TestCase {
 		morseCode.add(new BitString());
 
 		final CWInputNotification notifyIn = new CWInputNotification() {
-			@Override
 			public void frequencyChange(long newFreq) {
 			}
 
-			@Override
 			public void stateChange(byte newState, int value) {
 				if (state_change_count.size() == 0)
 					state_change_count.add(1);
@@ -554,7 +546,6 @@ public class CWPPackageTests extends TestCase {
 							.intValue() + 1);
 			}
 
-			@Override
 			public void morseMessage(BitString morseBits) {
 				System.out.println(morseBits);
 				System.out.println(MorseCodec.decodeMorseToMessage(morseBits));

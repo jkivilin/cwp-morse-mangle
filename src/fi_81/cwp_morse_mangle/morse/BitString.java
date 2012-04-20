@@ -85,12 +85,10 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		return bits.charAt(index);
 	}
 
-	@Override
 	public int length() {
 		return bits.length();
 	}
 
-	@Override
 	public CharSequence subSequence(int start, int end) {
 		return bits.subSequence(start, end);
 	}
