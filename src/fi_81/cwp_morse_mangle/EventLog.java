@@ -35,56 +35,88 @@ public class EventLog {
 	public static void startProfRecv(long timeReceived) {
 		if (profiling) {
 			recvSignalTime.set(timeReceived);
+
+			StringBuffer sb = localStringBuffer.get();
 			int allocs = Debug.getThreadAllocCount();
 			int size = Debug.getThreadAllocSize();
 
-			Log.d("profiler",
-					"received signal from network. Memory (used/allocs): "
-							+ size + "/" + allocs);
+			sb.setLength(0);
+			sb.append("received signal from network. Memory (used/allocs): ");
+			sb.append(size);
+			sb.append('/');
+			sb.append(allocs);
+
+			Log.d("profiler", sb.toString());
 		}
 	}
 
-	public static void endProgRecv(long timeProcessed, String info) {
+	public static void endProfRecv(long timeProcessed, String info,
+			long infoValue) {
 		if (profiling) {
 			long recvTime = recvSignalTime.getAndSet(0);
 			if (recvTime == 0)
 				return;
 
+			StringBuffer sb = localStringBuffer.get();
 			long duration = timeProcessed - recvTime;
 			int allocs = Debug.getThreadAllocCount();
 			int size = Debug.getThreadAllocSize();
 
-			Log.d("profiler",
-					"duration receiving signal from network to handling: "
-							+ duration + " ms (" + info
-							+ "). Memory (used/allocs): " + size + "/" + allocs);
+			sb.setLength(0);
+			sb.append("duration receiving signal from network to handling: ");
+			sb.append(duration);
+			sb.append(" ms (");
+			sb.append(info);
+			sb.append(infoValue);
+			sb.append("). Memory (used/allocs): ");
+			sb.append(size);
+			sb.append('/');
+			sb.append(allocs);
+
+			Log.d("profiler", sb.toString());
 		}
 	}
 
 	public static void startProfSend(long timeReceived, String info) {
 		if (profiling) {
 			sendSignalTime.set(timeReceived);
+
+			StringBuffer sb = localStringBuffer.get();
 			int allocs = Debug.getThreadAllocCount();
 			int size = Debug.getThreadAllocSize();
 
-			Log.d("profiler", "sending signal (" + info
-					+ "). Memory (used/allocs): " + size + "/" + allocs);
+			sb.setLength(0);
+			sb.append("sending signal (");
+			sb.append(info);
+			sb.append("). Memory (used/allocs): ");
+			sb.append(size);
+			sb.append('/');
+			sb.append(allocs);
+
+			Log.d("profiler", sb.toString());
 		}
 	}
 
-	public static void endProgSend(long timeProcessed) {
+	public static void endProfSend(long timeProcessed) {
 		if (profiling) {
 			long sendTime = sendSignalTime.getAndSet(0);
 			if (sendTime == 0)
 				return;
 
+			StringBuffer sb = localStringBuffer.get();
 			long duration = timeProcessed - sendTime;
 			int allocs = Debug.getThreadAllocCount();
 			int size = Debug.getThreadAllocSize();
 
-			Log.d("profiler", "duration from sending signal to network: "
-					+ duration + " ms. Memory (used/allocs): " + size + "/"
-					+ allocs);
+			sb.setLength(0);
+			sb.append("duration from sending signal to network: ");
+			sb.append(duration);
+			sb.append(" ms. Memory (used/allocs): ");
+			sb.append(size);
+			sb.append('/');
+			sb.append(allocs);
+
+			Log.d("profiler", sb.toString());
 		}
 	}
 
@@ -108,4 +140,12 @@ public class EventLog {
 		if (logging)
 			Log.e(tag, info);
 	}
+
+	/* Cached thread-local objects to reduce memory allocations */
+	private final static ThreadLocal<StringBuffer> localStringBuffer = new ThreadLocal<StringBuffer>() {
+		@Override
+		protected StringBuffer initialValue() {
+			return new StringBuffer();
+		}
+	};
 }

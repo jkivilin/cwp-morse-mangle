@@ -359,7 +359,7 @@ public class CWPControlThread extends Thread {
 				bytesCopied = connChannel.write(outBuf);
 
 				if (bytesCopied > 0)
-					EventLog.endProgSend(System.currentTimeMillis());
+					EventLog.endProfSend(System.currentTimeMillis());
 			}
 
 			keyIter.remove();

@@ -128,8 +128,7 @@ public class MainActivity extends Activity {
 			break;
 		}
 
-		EventLog.endProgRecv(System.currentTimeMillis(), "state-change: "
-				+ state);
+		EventLog.endProfRecv(System.currentTimeMillis(), "state-change: ", state);
 	}
 
 	/** To report touching state to service */
@@ -237,7 +236,7 @@ public class MainActivity extends Activity {
 							+ ": " + freq, 2000).show();
 		}
 
-		EventLog.endProgRecv(System.currentTimeMillis(), "freq-change: " + freq);
+		EventLog.endProfRecv(System.currentTimeMillis(), "freq-change: ", freq);
 	}
 
 	/** Called when the activity is first created. */
