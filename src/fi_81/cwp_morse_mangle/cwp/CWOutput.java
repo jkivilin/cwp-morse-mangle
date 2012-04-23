@@ -95,20 +95,7 @@ public class CWOutput {
 	}
 
 	private boolean isTimeToSend() {
-		if (queue.isEmpty())
-			return false;
-
-		/*
-		 * Check if current time has reached send-time of first state-change in
-		 * queue
-		 */
-		long currentTime = System.currentTimeMillis();
-		long timeSinceConnCreation = currentTime - startTime;
-
-		if (queue.peek().getOutTime() <= timeSinceConnCreation)
-			return true;
-
-		return false;
+		return timeToNextQueueWork() == 0;
 	}
 
 	public boolean isBusy() {
