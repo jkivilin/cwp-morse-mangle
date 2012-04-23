@@ -55,8 +55,7 @@ public class CWOutput {
 		return outBuf;
 	}
 
-	public long timeToNextWork() {
-		/* no next, return -1 */
+	public long timeToNextQueueWork() {
 		if (queue.isEmpty())
 			return Long.MAX_VALUE;
 
@@ -68,6 +67,31 @@ public class CWOutput {
 			return 0;
 
 		return timeToNext;
+	}
+
+	public long timeToNextContinuousUpWaveWork() {
+		if (!inManualUp)
+			return Long.MAX_VALUE;
+
+		/*
+		 * Split up-waves to 55 second chunks (max duration of up-wave is ~65
+		 * sec [(2^16-1) msec]).
+		 */
+		long nextReupTime = manualUpStartTime + (55 * 1000);
+		long currentTime = System.currentTimeMillis();
+		long timeToNext = nextReupTime - currentTime;
+
+		if (timeToNext < 0)
+			return 0;
+
+		return timeToNext;
+	}
+
+	public long timeToNextWork() {
+		long nextQueueWork = timeToNextQueueWork();
+		long nextContiniousUpWaveWork = timeToNextContinuousUpWaveWork();
+
+		return Math.min(nextQueueWork, nextContiniousUpWaveWork);
 	}
 
 	private boolean isTimeToSend() {
@@ -183,6 +207,25 @@ public class CWOutput {
 		return true;
 	}
 
+	private void renewUpState() {
+		if (!inManualUp)
+			return;
+
+		long currentTime = System.currentTimeMillis();
+		long timestamp = currentTime - startTime;
+		int upStateDuration = (int) (currentTime - manualUpStartTime);
+
+		/* Send state change up-to-down ... */
+		queue.add(new CWStateChange(CWStateChange.TYPE_UP_TO_DOWN,
+				upStateDuration, timestamp));
+
+		/* ... immediately followed by state change down-to-up. */
+		queue.add(new CWStateChange(CWStateChange.TYPE_DOWN_TO_UP,
+				(int) timestamp, timestamp));
+
+		manualUpStartTime = currentTime;
+	}
+
 	public boolean sendDown() {
 		return sendStateChange(CWStateChange.TYPE_UP_TO_DOWN);
 	}
@@ -193,6 +236,10 @@ public class CWOutput {
 
 	public boolean processOutput(CWOutputNotification notify) {
 		boolean addedToBuffer = false;
+
+		/* Time to renew up-wave? */
+		if (inManualUp && timeToNextContinuousUpWaveWork() == 0)
+			renewUpState();
 
 		outBuf.compact();
 
