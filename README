@@ -4,6 +4,7 @@ by Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
 1. Installing and building
 2. Usage
+3. Results of profiling
 
 -----------
 1. Building
@@ -83,3 +84,23 @@ When leaving main-screen, application stays running on background waiting
 signals from CWP server. When signal is received application displays 
 notification in the notification-bar.
 
+-----------------------
+3. Results of profiling
+-----------------------
+
+Profiling results gathered from 3 individual 3 minute runs, total 3274 sending
+state-change events and 465 receiving state-change events.
+
+Time from receiving data (socket) to visualizing in milliseconds:
+ min/avg/max/stddev: 1/6.0/44/4.9
+
+Time from touching event to sending network message in milliseconds:
+ min/avg/max/stddev: 1/3.0/34/1.5
+
+Memory allocations between two receiving data events:
+ Number of new allocations (avg): 37
+ Used new memory in bytes (avg): 1395
+
+Memory allocations between two sending data events:
+ Number of new allocations (avg): 34
+ Used new memory in bytes (avg): 1127
