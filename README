@@ -104,3 +104,28 @@ Memory allocations between two receiving data events:
 Memory allocations between two sending data events:
  Number of new allocations (avg): 34
  Used new memory in bytes (avg): 1127
+
+Memory usage while sending and receiving messages:
+ Heap-size: ~6 MB
+ Allocated: ~3 MB
+
+Methods using most execution time:
+ Incl Cpu Time %:
+ - CWPControlThread.run_loop / CWPControlThread.handleConnection
+   + Because waiting and sleeping for IO.
+
+ - CWInput.processInput used to took most of time before optimizing
+   morse decoding algorithm. Before optimizing, it could take ~10-150ms
+   (with average at ~15-20ms) to complete in tracing mode. This was reduced to
+   ~0-15ms (with average at <1ms).
+   + BitString used for morse-decoding was using BitSet as backing buffer which
+     was found to be very slow approach and was therefore reimplemented using
+     String as backing buffer.
+
+ - ToneGenerator was creating new audio-thread everytime tone was activated,
+   which added ~5-10 ms latency. For this reason SinAudioLoop class was added
+   to handle audio.
+
+ Cpu Time / Calls:
+ - SinAudioLoop.initSoundBuffer & MorseCharList.fillInMorseCharacters
+   + However, these are run only once in application lifetime.
