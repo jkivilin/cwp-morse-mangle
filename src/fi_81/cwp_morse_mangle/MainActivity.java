@@ -128,7 +128,8 @@ public class MainActivity extends Activity {
 			break;
 		}
 
-		EventLog.endProfRecv(System.currentTimeMillis(), "state-change: ", state);
+		EventLog.endProfRecv(System.currentTimeMillis(), "state-change: ",
+				state);
 	}
 
 	/** To report touching state to service */
