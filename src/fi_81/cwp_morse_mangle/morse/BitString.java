@@ -177,6 +177,18 @@ public class BitString implements Comparable<BitString>, CharSequence {
 		return bits.endsWith(suffix.bits);
 	}
 
+	/* Helper for handling endWith for StringBuffer */
+	public static boolean stringBufferEndWithBits(StringBuffer stringBuf,
+			BitString suffix) {
+		int suffixLen = suffix.length();
+		int bufferLen = stringBuf.length();
+
+		if (bufferLen < suffixLen)
+			return false;
+
+		return stringBuf.lastIndexOf(suffix.toString(), bufferLen - suffixLen) != -1;
+	}
+
 	/* Cached empty object to avoid allocation in split() */
 	private final static BitString[] emptyArray = new BitString[0];
 
@@ -194,16 +206,4 @@ public class BitString implements Comparable<BitString>, CharSequence {
 			return new ArrayList<BitString>();
 		}
 	};
-
-	/* Helper for handling endWith for StringBuffer */
-	public static boolean stringBufferEndWithBits(
-			StringBuffer stringBuf, BitString suffix) {
-		int suffixLen = suffix.length();
-		int bufferLen = stringBuf.length();
-
-		if (bufferLen < suffixLen)
-			return false;
-
-		return stringBuf.lastIndexOf(suffix.toString(), bufferLen - suffixLen) != -1;
-	}
 }
