@@ -8,7 +8,7 @@ import android.util.Log;
 /* Log wrapper with on/off switch and formatting input */
 public class EventLog {
 	private static final boolean logging = false;
-	private static final boolean profiling = true;
+	private static final boolean profiling = false;
 	private static final boolean tracing = false;
 	private static final AtomicLong recvSignalTime = new AtomicLong(0);
 	private static final AtomicLong sendSignalTime = new AtomicLong(0);
