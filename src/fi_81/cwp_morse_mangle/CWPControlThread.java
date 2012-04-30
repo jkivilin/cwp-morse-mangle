@@ -48,6 +48,7 @@ public class CWPControlThread extends Thread {
 	private String hostName = "";
 	private int hostPort = 0;
 	private int morseSpeed = 0;
+	private boolean useLatencyManagement = false;
 
 	/* Current connection setup */
 	private InetSocketAddress connSockAddr;
@@ -269,7 +270,12 @@ public class CWPControlThread extends Thread {
 		connSelKey = connChannel.register(selector, SelectionKey.OP_READ);
 
 		/* Connection has been created, initialize other components */
-		cwpIn = new CWInput();
+		if (useLatencyManagement) {
+			/* Set maximum latency management buffer length to 10 sec */
+			cwpIn = new CWInput(10000 /* ms */, connStartTime);
+		} else
+			cwpIn = new CWInput();
+
 		cwpOut = new CWOutput(connStartTime);
 
 		/* set frequency if not default */
@@ -374,7 +380,8 @@ public class CWPControlThread extends Thread {
 			switch (value.type) {
 			case CWPThreadValue.TYPE_CONFIGURATION:
 				handleNewConfiguration(value.getHostName(),
-						value.getHostPort(), value.getMorseSpeed());
+						value.getHostPort(), value.getMorseSpeed(),
+						value.getUseLatencyManagement());
 				break;
 			case CWPThreadValue.TYPE_STATE_CHANGE:
 				handleNewSendingState(value.isStateUp());
@@ -458,7 +465,7 @@ public class CWPControlThread extends Thread {
 	}
 
 	private void handleNewConfiguration(String hostName, int hostPort,
-			int morseSpeed) {
+			int morseSpeed, boolean useLatencyManagement) {
 		/* Enforce valid range of port */
 		if (hostPort < 0)
 			hostPort = 0;
@@ -470,6 +477,7 @@ public class CWPControlThread extends Thread {
 			this.hostName = hostName;
 			this.hostPort = hostPort;
 			this.morseSpeed = morseSpeed;
+			this.useLatencyManagement = useLatencyManagement;
 
 			CWStateChangeQueueFromMorseCode.setSignalWidth(morseSpeed);
 			CWStateChangeQueueFromMorseCode.setSignalJitter(Integer.MAX_VALUE,
@@ -486,10 +494,12 @@ public class CWPControlThread extends Thread {
 			this.morseSpeed = morseSpeed;
 		}
 
-		if (this.hostName.compareTo(hostName) != 0 || this.hostPort != hostPort) {
+		if (this.hostName.compareTo(hostName) != 0 || this.hostPort != hostPort
+				|| this.useLatencyManagement != useLatencyManagement) {
 			/* Server setup changed, trigger reconnection */
 			this.hostName = hostName;
 			this.hostPort = hostPort;
+			this.useLatencyManagement = useLatencyManagement;
 
 			/* restart from resolving server address */
 			resetServerConnection();
@@ -639,10 +649,10 @@ public class CWPControlThread extends Thread {
 
 	/** Set up new configuration for server */
 	public void setNewConfiguration(String hostName, int hostPort,
-			int morseSpeed) {
+			int morseSpeed, boolean useLatencyManagement) {
 		/* Push new configuration as message to IO-thread */
 		queuePush(msgQueue, CWPThreadValue.buildConfiguration(hostName,
-				hostPort, morseSpeed));
+				hostPort, morseSpeed, useLatencyManagement));
 
 		/* signal IO-thread of new message */
 		interrupt();
@@ -726,16 +736,18 @@ public class CWPControlThread extends Thread {
 		protected int type;
 		protected long argLong0;
 		protected int argInt0;
+		protected boolean argBool0;
 		protected Object argObj0;
 
 		protected static CWPThreadValue buildConfiguration(String hostName,
-				int hostPort, int morseSpeed) {
+				int hostPort, int morseSpeed, boolean useLatencyManagement) {
 			CWPThreadValue value = new CWPThreadValue();
 
 			value.type = TYPE_CONFIGURATION;
 			value.argObj0 = hostName;
 			value.argLong0 = hostPort;
 			value.argInt0 = morseSpeed;
+			value.argBool0 = useLatencyManagement;
 
 			return value;
 		}
@@ -747,6 +759,7 @@ public class CWPControlThread extends Thread {
 			value.argObj0 = null;
 			value.argLong0 = isStateUp ? 1 : 0;
 			value.argInt0 = 0;
+			value.argBool0 = false;
 
 			return value;
 		}
@@ -758,6 +771,7 @@ public class CWPControlThread extends Thread {
 			value.argObj0 = null;
 			value.argLong0 = freq;
 			value.argInt0 = 0;
+			value.argBool0 = false;
 
 			return value;
 		}
@@ -769,6 +783,7 @@ public class CWPControlThread extends Thread {
 			value.argObj0 = morse;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
+			value.argBool0 = false;
 
 			return value;
 		}
@@ -780,6 +795,7 @@ public class CWPControlThread extends Thread {
 			value.argObj0 = null;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
+			value.argBool0 = false;
 
 			return value;
 		}
@@ -791,6 +807,7 @@ public class CWPControlThread extends Thread {
 			value.argObj0 = null;
 			value.argLong0 = 0;
 			value.argInt0 = 0;
+			value.argBool0 = false;
 
 			return value;
 		}
@@ -808,6 +825,10 @@ public class CWPControlThread extends Thread {
 
 		protected int getMorseSpeed() {
 			return argInt0;
+		}
+
+		protected boolean getUseLatencyManagement() {
+			return argBool0;
 		}
 
 		/*

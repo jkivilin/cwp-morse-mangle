@@ -26,5 +26,6 @@
     <string name="menu_reset_connection">Reset connection</string>
     <string name="notification_received_signal_title">Received signal</string>
     <string name="notification_received_signal_text_wave">Received wave signal from CWP server</string>
+    <string name="pref_latency_management">Use latency management</string>
 
 </resources>

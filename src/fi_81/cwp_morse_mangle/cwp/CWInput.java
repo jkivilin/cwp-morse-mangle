@@ -2,6 +2,7 @@ package fi_81.cwp_morse_mangle.cwp;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayDeque;
 
 import fi_81.cwp_morse_mangle.cwp.CWInputQueue;
 import fi_81.cwp_morse_mangle.morse.BitString;
@@ -28,15 +29,30 @@ public class CWInput {
 		}
 	}
 
+	private final int MAX_BUFFER_PAST = 100000; /* 100 sec */
+
 	private long currFreq = 1;
 	private ByteBuffer inBuf;
-	private CWInputQueue queue;
+	private CWInputQueue morseQueue;
+	private ArrayDeque<CWStateChange> bufferQueue;
 	private final CWaveQueueToMorseCode morseDecoder = new CWaveQueueToMorseCode();
 	private long lastReceivedWaveTime;
 
+	private int lastStateUpValue;
+	private long lastReceivedStateTime;
+	private int maxBufferLength;
+	private int bufferLength;
+	private long connStartTime;
+
 	public CWInput(CWInputQueue queue, ByteBuffer bb) {
+		maxBufferLength = 0;
+		bufferLength = 0;
+		lastStateUpValue = 0;
+		lastReceivedStateTime = 0;
+
 		lastReceivedWaveTime = 0;
-		this.queue = queue;
+		morseQueue = queue;
+		bufferQueue = new ArrayDeque<CWStateChange>();
 
 		if (bb == null) {
 			/* Allocate IO buffer and set it to big-endian byteorder */
@@ -56,6 +72,13 @@ public class CWInput {
 		this(new CWInputQueue(), null);
 	}
 
+	public CWInput(int maxBufferLen, long connectionStartTime) {
+		this(new CWInputQueue(), null);
+
+		connStartTime = connectionStartTime;
+		maxBufferLength = maxBufferLen;
+	}
+
 	public ByteBuffer getInBuffer() {
 		return inBuf;
 	}
@@ -66,7 +89,7 @@ public class CWInput {
 		while (inBuf.remaining() > 0) {
 			boolean out = false;
 
-			switch (queue.getCurrentState()) {
+			switch (morseQueue.getCurrentState()) {
 			case CWave.TYPE_DOWN:
 				/* In down state, expect 4 bytes integer input */
 				if (inBuf.remaining() < 4) {
@@ -97,10 +120,24 @@ public class CWInput {
 			 */
 			BitString morseBits;
 			do {
-				morseBits = morseDecoder.tryDecode(queue, false);
+				morseBits = morseDecoder.tryDecode(morseQueue, false);
 				if (morseBits != null)
 					notify.morseMessage(morseBits);
 			} while (morseBits != null);
+		}
+
+		inBuf.compact();
+
+		/*
+		 * Process buffered state changes
+		 */
+		while (timeToNextQueueWork() == 0) {
+			CWStateChange state = bufferQueue.remove();
+
+			if (state.type == CWStateChange.TYPE_DOWN_TO_UP)
+				notify.stateChange(CWave.TYPE_UP, state.value);
+			else
+				notify.stateChange(CWave.TYPE_DOWN, state.value);
 		}
 
 		/*
@@ -108,7 +145,7 @@ public class CWInput {
 		 */
 		boolean forceFlush = false;
 
-		if (queue.getQueue().size() > MorseCodec.endSequence.length())
+		if (morseQueue.getQueue().size() > MorseCodec.endSequence.length())
 			forceFlush = true;
 		else if (timeToNextWork() == 0)
 			forceFlush = true;
@@ -116,8 +153,21 @@ public class CWInput {
 		flushStaleMorseBits(notify, forceFlush);
 		if (forceFlush)
 			lastReceivedWaveTime = 0;
+	}
 
-		inBuf.compact();
+	private long timeToNextQueueWork() {
+		if (maxBufferLength <= 0 || bufferQueue.isEmpty())
+			return Long.MAX_VALUE;
+
+		long currentTime = System.currentTimeMillis();
+		long timeSinceConnCreation = currentTime - connStartTime;
+		long timeToNext = bufferQueue.peek().getOutTime()
+				- timeSinceConnCreation;
+
+		if (timeToNext < 0)
+			return 0;
+
+		return timeToNext;
 	}
 
 	private void processInputDown(CWInputNotification notify) {
@@ -140,12 +190,30 @@ public class CWInput {
 				currFreq = newFreq;
 			}
 		} else {
-			queue.pushStateUp(value);
-			notify.stateChange(CWave.TYPE_UP, value);
+			long currTime = System.currentTimeMillis();
+
+			morseQueue.pushStateUp(value);
+
+			/* Buffer management for visualizing received state changes */
+			if (maxBufferLength > 0) {
+				adjustBufferLength(value, currTime);
+
+				bufferQueue.add(new CWStateChange(
+						CWStateChange.TYPE_DOWN_TO_UP, value, bufferLength
+								+ value));
+
+				lastStateUpValue = value;
+			} else {
+				/* No buffering if max buffer length set to zero */
+				notify.stateChange(CWave.TYPE_UP, value);
+			}
+
+			lastReceivedStateTime = currTime;
 		}
 	}
 
 	private void processInputUp(CWInputNotification notify) {
+		long currTime = System.currentTimeMillis();
 		int value = inBuf.getShort();
 
 		/*
@@ -155,10 +223,44 @@ public class CWInput {
 		value = value & 0xffff;
 
 		/* At up state, so this must be state-change:down */
-		queue.pushStateDown(value);
-		notify.stateChange(CWave.TYPE_DOWN, value);
+		morseQueue.pushStateDown(value);
 
-		lastReceivedWaveTime = System.currentTimeMillis();
+		/* Buffer management for visualizing received state changes */
+		if (maxBufferLength > 0) {
+			adjustBufferLength(lastStateUpValue + value, currTime);
+
+			bufferQueue.add(new CWStateChange(CWStateChange.TYPE_UP_TO_DOWN,
+					value, bufferLength + lastStateUpValue + value));
+		} else {
+			/* No buffering if max buffer length set to zero */
+			notify.stateChange(CWave.TYPE_DOWN, value);
+		}
+
+		lastReceivedWaveTime = currTime;
+		lastReceivedStateTime = currTime;
+	}
+
+	private void adjustBufferLength(int timeStamp, long currTime) {
+		/* Adjust buffer length depending on current network latency */
+		long currConnTime = currTime - connStartTime;
+		int latency = (int) (currConnTime - timeStamp);
+		int timeSinceLastState = (int) (currTime - lastReceivedStateTime);
+
+		/*
+		 * Adjust buffer length as specified in CWP Spec v1.1,
+		 * "6 Latency Management"
+		 */
+		if (latency <= bufferLength) {
+			bufferLength -= (timeSinceLastState * (bufferLength + latency))
+					/ MAX_BUFFER_PAST;
+		} else {
+			bufferLength = latency;
+		}
+
+		if (bufferLength < 0)
+			bufferLength = 0;
+		else if (bufferLength > maxBufferLength)
+			bufferLength = maxBufferLength;
 	}
 
 	public void flushStaleMorseBits(CWInputNotification notify, boolean force) {
@@ -167,7 +269,7 @@ public class CWInput {
 		/* Force decoding */
 		if (force) {
 			do {
-				morseBits = morseDecoder.tryDecode(queue, true);
+				morseBits = morseDecoder.tryDecode(morseQueue, true);
 				if (morseBits != null) {
 					notify.morseMessage(morseBits);
 					continue;
@@ -185,7 +287,7 @@ public class CWInput {
 		return morseDecoder.hadPendingBits();
 	}
 
-	public long timeToNextWork() {
+	private long timeToNextMorseWork() {
 		/* If no received waves, don't wait */
 		if (lastReceivedWaveTime <= 0)
 			return Long.MAX_VALUE;
@@ -204,5 +306,9 @@ public class CWInput {
 			return 0;
 
 		return timeToFlush;
+	}
+
+	public long timeToNextWork() {
+		return Math.min(timeToNextQueueWork(), timeToNextMorseWork());
 	}
 }

@@ -129,3 +129,5 @@ Methods using most execution time:
  Cpu Time / Calls:
  - SinAudioLoop.initSoundBuffer & MorseCharList.fillInMorseCharacters
    + However, these are run only once in application lifetime.
+
+NOTE: For profiling, latency management was disabled.

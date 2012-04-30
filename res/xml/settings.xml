@@ -29,6 +29,9 @@
         <CheckBoxPreference
             android:key="allow_vibrator"
             android:title="@string/pref_vibrator" />
+        <CheckBoxPreference
+            android:key="latency_management"
+            android:title="@string/pref_latency_management" />
     </PreferenceCategory>
 
 </PreferenceScreen>

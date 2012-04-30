@@ -361,8 +361,9 @@ public class CWPControlService extends Service {
 	}
 
 	/** New configuration for CWP service */
-	public void setConfiguration(String hostName, int hostPort, int morseSpeed) {
-		ioThread.setNewConfiguration(hostName, hostPort, morseSpeed);
+	public void setConfiguration(String hostName, int hostPort, int morseSpeed,
+			boolean useLatencyManagement) {
+		ioThread.setNewConfiguration(hostName, hostPort, morseSpeed, useLatencyManagement);
 	}
 
 	/** Called by MainActivity when touching lamp-image */

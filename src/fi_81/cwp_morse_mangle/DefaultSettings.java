@@ -9,6 +9,7 @@ public class DefaultSettings {
 	public static final String MORSE_SPEED_DEFAULT = "med";
 	public static boolean BEEP_DEFAULT = true;
 	public static boolean VIBRATOR_DEFAULT = true;
+	public static boolean LATENCY_MANAGEMENT_DEFAULT = true;
 
 	/* Milliseconds values for morse speed */
 	public static int MORSE_SPEED_FAST = 50;
@@ -43,6 +44,11 @@ public class DefaultSettings {
 
 	public static boolean getVibrator(SharedPreferences settings) {
 		return settings.getBoolean("allow_vibrator", VIBRATOR_DEFAULT);
+	}
+
+	public static boolean getLatencyManagement(SharedPreferences settings) {
+		return settings.getBoolean("latency_management",
+				LATENCY_MANAGEMENT_DEFAULT);
 	}
 
 	public static int getHostPortInt(SharedPreferences settings) {

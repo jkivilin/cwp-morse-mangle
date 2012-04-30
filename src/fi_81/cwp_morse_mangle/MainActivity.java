@@ -431,7 +431,8 @@ public class MainActivity extends Activity {
 			/* Pass current settings to CWP service */
 			cwpService.setConfiguration(DefaultSettings.getHostName(settings),
 					DefaultSettings.getHostPortInt(settings),
-					DefaultSettings.getMorseSpeedMillisec(settings));
+					DefaultSettings.getMorseSpeedMillisec(settings),
+					DefaultSettings.getLatencyManagement(settings));
 
 			/* Clear current notification */
 			cwpService.clearNotification();
@@ -581,13 +582,15 @@ public class MainActivity extends Activity {
 
 				/* Pass cleared settings to CWP service to close connection */
 				cwpService.setConfiguration("", 12345,
-						DefaultSettings.getMorseSpeedMillisec(settings));
+						DefaultSettings.getMorseSpeedMillisec(settings),
+						DefaultSettings.getLatencyManagement(settings));
 
 				/* Pass current settings to CWP service restore connection */
 				cwpService.setConfiguration(
 						DefaultSettings.getHostName(settings),
 						DefaultSettings.getHostPortInt(settings),
-						DefaultSettings.getMorseSpeedMillisec(settings));
+						DefaultSettings.getMorseSpeedMillisec(settings),
+						DefaultSettings.getLatencyManagement(settings));
 			}
 
 			return true;
@@ -667,7 +670,8 @@ public class MainActivity extends Activity {
 			/* Pass current settings to CWP service */
 			cwpService.setConfiguration(DefaultSettings.getHostName(settings),
 					DefaultSettings.getHostPortInt(settings),
-					DefaultSettings.getMorseSpeedMillisec(settings));
+					DefaultSettings.getMorseSpeedMillisec(settings),
+					DefaultSettings.getLatencyManagement(settings));
 
 			/* Clear current notification */
 			cwpService.clearNotification();

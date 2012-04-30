@@ -22,6 +22,7 @@ public class MainSettingsActivity extends PreferenceActivity implements
 	private ListPreference morseSpeed;
 	private CheckBoxPreference allowBeep;
 	private CheckBoxPreference allowVibrator;
+	private CheckBoxPreference useLatencyManagement;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -37,6 +38,7 @@ public class MainSettingsActivity extends PreferenceActivity implements
 		morseSpeed = (ListPreference) findPreference("morse_speed");
 		allowBeep = (CheckBoxPreference) findPreference("allow_beep");
 		allowVibrator = (CheckBoxPreference) findPreference("allow_vibrator");
+		useLatencyManagement = (CheckBoxPreference) findPreference("latency_management");
 
 		hostAddr.setOnPreferenceChangeListener(this);
 		hostPort.setOnPreferenceChangeListener(this);
@@ -52,6 +54,8 @@ public class MainSettingsActivity extends PreferenceActivity implements
 
 		allowBeep.setChecked(DefaultSettings.getBeep(settings));
 		allowVibrator.setChecked(DefaultSettings.getVibrator(settings));
+		useLatencyManagement.setChecked(DefaultSettings
+				.getLatencyManagement(settings));
 
 		hostPort.setSummary(DefaultSettings.getHostPort(settings));
 		hostAddr.setSummary(DefaultSettings.getHostName(settings));
@@ -180,6 +184,7 @@ public class MainSettingsActivity extends PreferenceActivity implements
 		morseSpeed = null;
 		allowBeep = null;
 		allowVibrator = null;
+		useLatencyManagement = null;
 
 		super.onDestroy();
 	}
