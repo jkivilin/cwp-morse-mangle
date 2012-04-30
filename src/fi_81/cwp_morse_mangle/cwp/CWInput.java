@@ -83,7 +83,7 @@ public class CWInput {
 		return inBuf;
 	}
 
-	public void processInput(CWInputNotification notify) {
+	public void processInput(final CWInputNotification notify) {
 		inBuf.flip();
 
 		while (inBuf.remaining() > 0) {
@@ -114,6 +114,12 @@ public class CWInput {
 				break;
 
 			/*
+			 * Process new buffered state changes before morse decoding, as
+			 * morse decoding induces more latency and jitter.
+			 */
+			processBufferedStateChanges(notify);
+
+			/*
 			 * After receiving data, decode buffered wave-form to morse code.
 			 * Decode after each received message, as this enforces same
 			 * behavior in test-cases as in real world.
@@ -129,16 +135,10 @@ public class CWInput {
 		inBuf.compact();
 
 		/*
-		 * Process buffered state changes
+		 * Process buffered state changes (this is here in case there was no new
+		 * input, to processing delayed state changes)
 		 */
-		while (timeToNextQueueWork() == 0) {
-			CWStateChange state = bufferQueue.remove();
-
-			if (state.type == CWStateChange.TYPE_DOWN_TO_UP)
-				notify.stateChange(CWave.TYPE_UP, state.value);
-			else
-				notify.stateChange(CWave.TYPE_DOWN, state.value);
-		}
+		processBufferedStateChanges(notify);
 
 		/*
 		 * Let morseDecoder to flush too old stale morse bits
@@ -155,22 +155,7 @@ public class CWInput {
 			lastReceivedWaveTime = 0;
 	}
 
-	private long timeToNextQueueWork() {
-		if (maxBufferLength <= 0 || bufferQueue.isEmpty())
-			return Long.MAX_VALUE;
-
-		long currentTime = System.currentTimeMillis();
-		long timeSinceConnCreation = currentTime - connStartTime;
-		long timeToNext = bufferQueue.peek().getOutTime()
-				- timeSinceConnCreation;
-
-		if (timeToNext < 0)
-			return 0;
-
-		return timeToNext;
-	}
-
-	private void processInputDown(CWInputNotification notify) {
+	private void processInputDown(final CWInputNotification notify) {
 		int value = inBuf.getInt();
 
 		/* At down state, so this is either state-change:up or freq-change */
@@ -194,7 +179,7 @@ public class CWInput {
 
 			morseQueue.pushStateUp(value);
 
-			/* Buffer management for visualizing received state changes */
+			/* Latency management for visualizing received state changes */
 			if (maxBufferLength > 0) {
 				adjustBufferLength(value, currTime);
 
@@ -212,7 +197,7 @@ public class CWInput {
 		}
 	}
 
-	private void processInputUp(CWInputNotification notify) {
+	private void processInputUp(final CWInputNotification notify) {
 		long currTime = System.currentTimeMillis();
 		int value = inBuf.getShort();
 
@@ -225,7 +210,7 @@ public class CWInput {
 		/* At up state, so this must be state-change:down */
 		morseQueue.pushStateDown(value);
 
-		/* Buffer management for visualizing received state changes */
+		/* Latency management for visualizing received state changes */
 		if (maxBufferLength > 0) {
 			adjustBufferLength(lastStateUpValue + value, currTime);
 
@@ -238,6 +223,21 @@ public class CWInput {
 
 		lastReceivedWaveTime = currTime;
 		lastReceivedStateTime = currTime;
+	}
+
+	private void processBufferedStateChanges(final CWInputNotification notify) {
+		/*
+		 * Process buffered data in-order, so that state changes in past will be
+		 * processed as 0ms length waves.
+		 */
+		while (timeToNextQueueWork() == 0) {
+			CWStateChange state = bufferQueue.remove();
+
+			if (state.type == CWStateChange.TYPE_DOWN_TO_UP)
+				notify.stateChange(CWave.TYPE_UP, state.value);
+			else
+				notify.stateChange(CWave.TYPE_DOWN, state.value);
+		}
 	}
 
 	private void adjustBufferLength(int timeStamp, long currTime) {
@@ -287,6 +287,23 @@ public class CWInput {
 		return morseDecoder.hadPendingBits();
 	}
 
+	/* Time to next latency management delayed work */
+	private long timeToNextQueueWork() {
+		if (maxBufferLength <= 0 || bufferQueue.isEmpty())
+			return Long.MAX_VALUE;
+
+		long currentTime = System.currentTimeMillis();
+		long timeSinceConnCreation = currentTime - connStartTime;
+		long timeToNext = bufferQueue.peek().getOutTime()
+				- timeSinceConnCreation;
+
+		if (timeToNext < 0)
+			return 0;
+
+		return timeToNext;
+	}
+
+	/* Time to next morse decoder delayed work */
 	private long timeToNextMorseWork() {
 		/* If no received waves, don't wait */
 		if (lastReceivedWaveTime <= 0)
