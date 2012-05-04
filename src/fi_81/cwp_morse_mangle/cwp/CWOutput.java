@@ -42,7 +42,7 @@ public class CWOutput {
 
 		if (bb == null) {
 			/* Allocate IO buffer and set it to big-endian byteorder */
-			outBuf = ByteBuffer.allocate(4);
+			outBuf = ByteBuffer.allocateDirect(128);
 			outBuf.order(ByteOrder.BIG_ENDIAN);
 		} else {
 			outBuf = bb;
