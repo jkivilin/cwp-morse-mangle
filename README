@@ -1,6 +1,14 @@
+This project was part of "Embedded Software Development Environments" course in
+spring 2012 (University of Oulu, Faculty of Science, Department of Information
+Processing Science). Goal was to develop an application for transmitting and
+receiving signals using Continuous Wave Protocol (protocol designed only for
+use by this course).
+
+Protocol specification is available at http://cwp.opimobi.com/
+
 CWP Morse Mangle
 ----------------
-by Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+by Jussi Kivilinna <jussi.kivilinna@gmail.com>
 
 1. Installing and building
 2. Usage
@@ -110,7 +118,7 @@ Memory usage while sending and receiving messages:
  Allocated: ~3 MB
 
 Methods using most execution time:
- Incl Cpu Time %:
+ Incl CPU Time %:
  - CWPControlThread.run_loop / CWPControlThread.handleConnection
    + Because waiting and sleeping for IO.
 
@@ -122,11 +130,11 @@ Methods using most execution time:
      was found to be very slow approach and was therefore reimplemented using
      String as backing buffer.
 
- - ToneGenerator was creating new audio-thread everytime tone was activated,
+ - ToneGenerator was creating new audio-thread every time tone was activated,
    which added ~5-10 ms latency. For this reason SinAudioLoop class was added
    to handle audio.
 
- Cpu Time / Calls:
+ CPU Time / Calls:
  - SinAudioLoop.initSoundBuffer & MorseCharList.fillInMorseCharacters
    + However, these are run only once in application lifetime.
 
