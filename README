@@ -12,7 +12,6 @@ by Jussi Kivilinna <jussi.kivilinna@gmail.com>
 
 1. Installing and building
 2. Usage
-3. Results of profiling
 
 -----------
 1. Building
@@ -91,51 +90,3 @@ Settings-screen contains settings used by application:
 When leaving main-screen, application stays running on background waiting
 signals from CWP server. When signal is received application displays 
 notification in the notification-bar.
-
------------------------
-3. Results of profiling
------------------------
-
-Profiling results gathered from 3 individual 3 minute runs, total 3274 sending
-state-change events and 465 receiving state-change events.
-
-Time from receiving data (socket) to visualizing in milliseconds:
- min/avg/max/stddev: 1/6.0/44/4.9
-
-Time from touching event to sending network message in milliseconds:
- min/avg/max/stddev: 1/3.0/34/1.5
-
-Memory allocations between two receiving data events:
- Number of new allocations (avg): 37
- Used new memory in bytes (avg): 1395
-
-Memory allocations between two sending data events:
- Number of new allocations (avg): 34
- Used new memory in bytes (avg): 1127
-
-Memory usage while sending and receiving messages:
- Heap-size: ~6 MB
- Allocated: ~3 MB
-
-Methods using most execution time:
- Incl CPU Time %:
- - CWPControlThread.run_loop / CWPControlThread.handleConnection
-   + Because waiting and sleeping for IO.
-
- - CWInput.processInput used to took most of time before optimizing
-   morse decoding algorithm. Before optimizing, it could take ~10-150ms
-   (with average at ~15-20ms) to complete in tracing mode. This was reduced to
-   ~0-15ms (with average at <1ms).
-   + BitString used for morse-decoding was using BitSet as backing buffer which
-     was found to be very slow approach and was therefore reimplemented using
-     String as backing buffer.
-
- - ToneGenerator was creating new audio-thread every time tone was activated,
-   which added ~5-10 ms latency. For this reason SinAudioLoop class was added
-   to handle audio.
-
- CPU Time / Calls:
- - SinAudioLoop.initSoundBuffer & MorseCharList.fillInMorseCharacters
-   + However, these are run only once in application lifetime.
-
-NOTE: For profiling, latency management was disabled.
